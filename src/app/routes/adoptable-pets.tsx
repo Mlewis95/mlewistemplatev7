@@ -1,4 +1,6 @@
 import type { Route } from "./+types/adoptable-pets";
+import { useEffect, useState } from "react";
+import { getPets } from "../../lib/database";
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -8,6 +10,29 @@ export function meta({}: Route.MetaArgs) {
 }
 
 export default function AdoptablePets() {
+  const [pets, setPets] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    async function fetchPets() {
+      try {
+        setLoading(true);
+        const petsData = await getPets();
+        setPets(petsData);
+      } catch (err) {
+        console.error('Error fetching pets:', err);
+        setError('Failed to load pets. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchPets();
+  }, []);
+
+  const dogs = pets.filter(pet => pet.type === 'dog');
+  const cats = pets.filter(pet => pet.type === 'cat');
   return (
     <div className="min-h-screen bg-gradient-to-br from-orange-50 via-yellow-50 to-pink-50">
       {/* Header */}
@@ -92,6 +117,18 @@ export default function AdoptablePets() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+            <div className="flex">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="text-center mb-12">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
@@ -123,7 +160,7 @@ export default function AdoptablePets() {
                   <svg className="w-4 h-4 text-orange-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  All ages and sizes available
+                  {loading ? 'Loading...' : `${dogs.length} dogs available`}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 text-orange-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
@@ -165,7 +202,7 @@ export default function AdoptablePets() {
                   <svg className="w-4 h-4 text-pink-500 mr-2" fill="currentColor" viewBox="0 0 20 20">
                     <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                   </svg>
-                  All ages and personalities
+                  {loading ? 'Loading...' : `${cats.length} cats available`}
                 </div>
                 <div className="flex items-center text-sm text-gray-600">
                   <svg className="w-4 h-4 text-pink-500 mr-2" fill="currentColor" viewBox="0 0 20 20">

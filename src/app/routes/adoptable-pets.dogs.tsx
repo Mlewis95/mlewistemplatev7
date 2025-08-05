@@ -1,5 +1,6 @@
 import type { Route } from "./+types/adoptable-pets.dogs";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getPets } from "../../lib/database";
 
 interface Dog {
   id: number;
@@ -29,134 +30,58 @@ export function meta({}: Route.MetaArgs) {
 export default function AdoptableDogs() {
   const [selectedDog, setSelectedDog] = useState<Dog | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [dogs, setDogs] = useState<Dog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ageFilter, setAgeFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
 
-  // Sample dog data with photos
-  const dogs: Dog[] = [
-    {
-      id: 1,
-      name: "Buddy",
-      age: "Adult",
-      size: "Large",
-      gender: "Male",
-      timeAtShelter: "8 months",
-      description: "Buddy is a gentle giant who loves belly rubs and long walks. He's been waiting for his forever home for 8 months.",
-      longDescription: "Buddy is a 4-year-old Golden Retriever mix who came to us as a stray. Despite his size, he's incredibly gentle and patient. He loves children and gets along well with other dogs. Buddy is house-trained and knows basic commands like sit, stay, and come. He's a perfect family dog who enjoys playing fetch, going for walks, and cuddling on the couch. His favorite treats are peanut butter and carrots. Buddy would do best in a home with a fenced yard where he can run and play.",
-      photos: [
-        "/api/placeholder/400/300/orange/FF6B35?text=Buddy+1",
-        "/api/placeholder/400/300/orange/FF8C42?text=Buddy+2", 
-        "/api/placeholder/400/300/orange/FFA726?text=Buddy+3",
-        "/api/placeholder/400/300/orange/FFB74D?text=Buddy+4"
-      ],
-      breed: "Golden Retriever Mix",
-      weight: "65 lbs",
-      energyLevel: "Medium",
-      goodWith: ["Children", "Dogs", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, neutered, heartworm negative",
-      specialNeeds: "None"
-    },
-    {
-      id: 2,
-      name: "Luna",
-      age: "Puppy",
-      size: "Medium",
-      gender: "Female",
-      timeAtShelter: "6 months",
-      description: "Luna is an energetic puppy who loves to play fetch and cuddle. She's been with us for 6 months.",
-      longDescription: "Luna is a 10-month-old Border Collie mix who is full of energy and intelligence. She's incredibly smart and learns new tricks quickly. Luna loves to play fetch, go for runs, and solve puzzle toys. She's very affectionate and loves to give kisses. Luna is crate-trained and working on her house-training. She would be perfect for an active family who can provide her with plenty of exercise and mental stimulation. Luna gets along well with other dogs and would love a canine companion to play with.",
-      photos: [
-        "/api/placeholder/400/300/purple/9C27B0?text=Luna+1",
-        "/api/placeholder/400/300/purple/BA68C8?text=Luna+2",
-        "/api/placeholder/400/300/purple/E1BEE7?text=Luna+3"
-      ],
-      breed: "Border Collie Mix",
-      weight: "35 lbs",
-      energyLevel: "High",
-      goodWith: ["Children", "Dogs"],
-      medicalInfo: "Vaccinated, microchipped, spayed, heartworm negative",
-      specialNeeds: "Needs active lifestyle"
-    },
-    {
-      id: 3,
-      name: "Max",
-      age: "Adult",
-      size: "Small",
-      gender: "Male",
-      timeAtShelter: "4 months",
-      description: "Max is a sweet little guy who loves to sit in laps and go for short walks. He's been here for 4 months.",
-      longDescription: "Max is a 3-year-old Chihuahua mix who is the perfect lap dog. He's very affectionate and loves to cuddle. Max is house-trained and knows basic commands. He enjoys short walks and playing with small toys. Max is a bit shy at first but warms up quickly to people he trusts. He would do well in a quiet home with older children or adults. Max is not a fan of loud noises and would prefer a calm environment. He's great for apartment living due to his small size and low exercise needs.",
-      photos: [
-        "/api/placeholder/400/300/orange/FF9800?text=Max+1",
-        "/api/placeholder/400/300/orange/FFB74D?text=Max+2"
-      ],
-      breed: "Chihuahua Mix",
-      weight: "12 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children"],
-      medicalInfo: "Vaccinated, microchipped, neutered, heartworm negative",
-      specialNeeds: "Prefers quiet environment"
-    },
-    {
-      id: 4,
-      name: "Daisy",
-      age: "Senior",
-      size: "Small",
-      gender: "Female",
-      timeAtShelter: "3 months",
-      description: "Daisy is a wise senior who enjoys quiet time and gentle pets. She's been with us for 3 months.",
-      longDescription: "Daisy is a 12-year-old Shih Tzu who is looking for a peaceful retirement home. She's very gentle and loves to be brushed and pampered. Daisy is house-trained and well-behaved. She enjoys short walks and spending time in sunny spots. Daisy is great with older adults and would be perfect for a quiet household. She has some arthritis in her hips, so she needs a home without stairs. Daisy is very loyal and will make a wonderful companion for someone who wants a calm, loving dog.",
-      photos: [
-        "/api/placeholder/400/300/gray/9E9E9E?text=Daisy+1",
-        "/api/placeholder/400/300/gray/BDBDBD?text=Daisy+2"
-      ],
-      breed: "Shih Tzu",
-      weight: "15 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children"],
-      medicalInfo: "Vaccinated, microchipped, spayed, on arthritis medication",
-      specialNeeds: "No stairs, gentle exercise only"
-    },
-    {
-      id: 5,
-      name: "Rocky",
-      age: "Adult",
-      size: "Large",
-      gender: "Male",
-      timeAtShelter: "2 months",
-      description: "Rocky is a strong, loyal dog who loves to run and play. He's been waiting for 2 months.",
-      longDescription: "Rocky is a 5-year-old German Shepherd mix who is incredibly loyal and protective. He's very intelligent and eager to please. Rocky knows many commands and is well-trained. He loves to go for long walks, play fetch, and work on training exercises. Rocky is protective of his family and would make an excellent guard dog. He needs an experienced owner who can provide firm, consistent training. Rocky gets along well with other dogs but would prefer to be the only dog in the household. He's great with older children who know how to interact with dogs respectfully.",
-      photos: [
-        "/api/placeholder/400/300/orange/FF5722?text=Rocky+1",
-        "/api/placeholder/400/300/orange/FF7043?text=Rocky+2",
-        "/api/placeholder/400/300/orange/FF8A65?text=Rocky+3"
-      ],
-      breed: "German Shepherd Mix",
-      weight: "75 lbs",
-      energyLevel: "High",
-      goodWith: ["Older Children", "Adults"],
-      medicalInfo: "Vaccinated, microchipped, neutered, heartworm negative",
-      specialNeeds: "Needs experienced owner"
-    },
-    {
-      id: 6,
-      name: "Bella",
-      age: "Puppy",
-      size: "Small",
-      gender: "Female",
-      timeAtShelter: "1 month",
-      description: "Bella is an adorable puppy who loves to explore and make new friends. She's been here for 1 month.",
-      longDescription: "Bella is a 6-month-old Beagle mix who is full of curiosity and energy. She loves to explore and follow her nose. Bella is very social and gets along well with everyone she meets. She's working on her house-training and basic commands. Bella loves to play with toys and other dogs. She would be perfect for a family who can provide her with plenty of attention and training. Bella is very food-motivated, which makes training easier. She would do well in a home with a fenced yard where she can safely explore.",
-      photos: [
-        "/api/placeholder/400/300/purple/AB47BC?text=Bella+1",
-        "/api/placeholder/400/300/purple/CE93D8?text=Bella+2"
-      ],
-      breed: "Beagle Mix",
-      weight: "20 lbs",
-      energyLevel: "Medium",
-      goodWith: ["Children", "Dogs", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, spayed, heartworm negative",
-      specialNeeds: "Needs training and supervision"
+  useEffect(() => {
+    async function fetchDogs() {
+      try {
+        setLoading(true);
+        const petsData = await getPets('dog');
+        // Transform database data to match our interface
+        const transformedDogs: Dog[] = petsData.map((pet: any) => ({
+          id: pet.id,
+          name: pet.name,
+          age: pet.age,
+          size: pet.size,
+          gender: pet.gender,
+          timeAtShelter: pet.time_at_shelter,
+          description: pet.description,
+          longDescription: pet.long_description,
+          photos: pet.photos || [],
+          breed: pet.breed,
+          weight: pet.weight,
+          energyLevel: pet.energy_level,
+          goodWith: pet.good_with || [],
+          medicalInfo: pet.medical_info,
+          specialNeeds: pet.special_needs
+        }));
+        setDogs(transformedDogs);
+      } catch (err) {
+        console.error('Error fetching dogs:', err);
+        setError('Failed to load dogs. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+
+    fetchDogs();
+  }, []);
+
+  // Filter dogs based on selected filters
+  const filteredDogs = dogs.filter(dog => {
+    if (ageFilter && dog.age.toLowerCase() !== ageFilter.toLowerCase()) return false;
+    if (sizeFilter && dog.size.toLowerCase() !== sizeFilter.toLowerCase()) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setAgeFilter('');
+    setSizeFilter('');
+  };
 
   const openModal = (dog: Dog) => {
     setSelectedDog(dog);
@@ -270,6 +195,26 @@ export default function AdoptableDogs() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+            <div className="flex">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-orange-600"></div>
+            <p className="mt-4 text-gray-600">Loading dogs...</p>
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
@@ -292,6 +237,8 @@ export default function AdoptableDogs() {
               </label>
               <select
                 id="age-filter"
+                value={ageFilter}
+                onChange={(e) => setAgeFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors duration-200 text-gray-900"
               >
                 <option value="">All Ages</option>
@@ -308,6 +255,8 @@ export default function AdoptableDogs() {
               </label>
               <select
                 id="size-filter"
+                value={sizeFilter}
+                onChange={(e) => setSizeFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-colors duration-200 text-gray-900"
               >
                 <option value="">All Sizes</option>
@@ -319,7 +268,10 @@ export default function AdoptableDogs() {
 
             {/* Clear Filters */}
             <div className="flex items-end">
-              <button className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+              <button 
+                onClick={clearFilters}
+                className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200"
+              >
                 Clear Filters
               </button>
             </div>
@@ -327,15 +279,16 @@ export default function AdoptableDogs() {
             {/* Results Count */}
             <div className="flex items-end">
               <p className="text-sm text-gray-600">
-                Showing <span className="font-semibold">12</span> of <span className="font-semibold">24</span> dogs
+                Showing <span className="font-semibold">{filteredDogs.length}</span> of <span className="font-semibold">{dogs.length}</span> dogs
               </p>
             </div>
           </div>
         </div>
 
         {/* Dogs Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {dogs.map((dog) => (
+        {!loading && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredDogs.map((dog) => (
             <div key={dog.id} className="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <div className="relative">
                 <div className="h-64 bg-gradient-to-br from-orange-100 to-yellow-100 flex items-center justify-center">
@@ -345,7 +298,7 @@ export default function AdoptableDogs() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {dog.timeAtShelter === "8 months" && (
+                {dogs.length > 0 && dog.timeAtShelter === dogs[0].timeAtShelter && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
                     Longest Resident
                   </div>
@@ -383,7 +336,8 @@ export default function AdoptableDogs() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Load More Button */}
         <div className="text-center mt-12">

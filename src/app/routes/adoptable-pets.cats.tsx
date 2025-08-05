@@ -1,5 +1,6 @@
 import type { Route } from "./+types/adoptable-pets.cats";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { getPets } from "../../lib/database";
 
 interface Cat {
   id: number;
@@ -29,173 +30,58 @@ export function meta({}: Route.MetaArgs) {
 export default function AdoptableCats() {
   const [selectedCat, setSelectedCat] = useState<Cat | null>(null);
   const [currentPhotoIndex, setCurrentPhotoIndex] = useState(0);
+  const [cats, setCats] = useState<Cat[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [ageFilter, setAgeFilter] = useState('');
+  const [sizeFilter, setSizeFilter] = useState('');
 
-  // Sample cat data with photos
-  const cats: Cat[] = [
-    {
-      id: 1,
-      name: "Whiskers",
-      age: "Senior",
-      size: "Medium",
-      gender: "Male",
-      timeAtShelter: "10 months",
-      description: "Whiskers is a wise senior cat who loves sunny spots and gentle pets. He's been waiting for his forever home for 10 months.",
-      longDescription: "Whiskers is a 14-year-old Domestic Longhair who came to us when his previous owner could no longer care for him. Despite his age, he's still quite active and loves to explore. Whiskers is very affectionate and enjoys being brushed and sitting in sunny windows. He's litter-trained and well-behaved. Whiskers gets along well with other cats and would be perfect for a quiet household. He has some arthritis in his joints, so he needs a home without stairs. Whiskers is very loyal and will make a wonderful companion for someone who wants a calm, loving cat.",
-      photos: [
-        "/api/placeholder/400/300/gray/9E9E9E?text=Whiskers+1",
-        "/api/placeholder/400/300/gray/BDBDBD?text=Whiskers+2",
-        "/api/placeholder/400/300/gray/D3D3D3?text=Whiskers+3"
-      ],
-      breed: "Domestic Longhair",
-      weight: "12 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, neutered, on arthritis medication",
-      specialNeeds: "No stairs, gentle handling"
-    },
-    {
-      id: 2,
-      name: "Luna",
-      age: "Kitten",
-      size: "Small",
-      gender: "Female",
-      timeAtShelter: "7 months",
-      description: "Luna is a playful kitten who loves to chase toys and climb cat trees. She's been with us for 7 months.",
-      longDescription: "Luna is a 9-month-old Domestic Shorthair who is full of energy and curiosity. She loves to play with toys, especially anything that moves or makes noise. Luna is very social and gets along well with other cats and people. She's litter-trained and learning to use scratching posts. Luna would be perfect for a family who can provide her with plenty of attention and playtime. She loves to climb and would enjoy a home with cat trees or shelves. Luna is very affectionate and loves to cuddle after a good play session.",
-      photos: [
-        "/api/placeholder/400/300/purple/9C27B0?text=Luna+1",
-        "/api/placeholder/400/300/purple/BA68C8?text=Luna+2",
-        "/api/placeholder/400/300/purple/E1BEE7?text=Luna+3"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "6 lbs",
-      energyLevel: "High",
-      goodWith: ["Children", "Cats", "Adults"],
-      medicalInfo: "Vaccinated, microchipped, spayed, FIV/FeLV negative",
-      specialNeeds: "Needs active playtime"
-    },
-    {
-      id: 3,
-      name: "Shadow",
-      age: "Adult",
-      size: "Large",
-      gender: "Male",
-      timeAtShelter: "5 months",
-      description: "Shadow is a sleek black cat who loves to explore and hunt. He's been here for 5 months.",
-      longDescription: "Shadow is a 3-year-old Domestic Shorthair who is very independent and curious. He loves to explore his environment and will investigate every nook and cranny. Shadow is a skilled hunter and enjoys chasing laser pointers and feather toys. He's very intelligent and can open doors and cabinets. Shadow is affectionate on his own terms and enjoys being petted when he's in the mood. He would do well in a home where he can have some independence and space to explore. Shadow gets along well with other cats but prefers to be the dominant one in the household.",
-      photos: [
-        "/api/placeholder/400/300/orange/FF5722?text=Shadow+1",
-        "/api/placeholder/400/300/orange/FF7043?text=Shadow+2"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "15 lbs",
-      energyLevel: "Medium",
-      goodWith: ["Adults", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, neutered, FIV/FeLV negative",
-      specialNeeds: "Needs space to explore"
-    },
-    {
-      id: 4,
-      name: "Mittens",
-      age: "Kitten",
-      size: "Small",
-      gender: "Female",
-      timeAtShelter: "4 months",
-      description: "Mittens is an adorable kitten with white paws who loves to play and cuddle. She's been with us for 4 months.",
-      longDescription: "Mittens is a 6-month-old Domestic Shorthair with distinctive white paws that look like little mittens. She's very playful and loves to chase toys and climb. Mittens is very affectionate and loves to sit in laps and be petted. She's litter-trained and learning to use scratching posts. Mittens gets along well with other cats and would be perfect for a family with children. She's very social and loves attention. Mittens would do well in a home where she can have plenty of playtime and cuddles.",
-      photos: [
-        "/api/placeholder/400/300/purple/AB47BC?text=Mittens+1",
-        "/api/placeholder/400/300/purple/CE93D8?text=Mittens+2"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "5 lbs",
-      energyLevel: "High",
-      goodWith: ["Children", "Cats", "Adults"],
-      medicalInfo: "Vaccinated, microchipped, spayed, FIV/FeLV negative",
-      specialNeeds: "Needs playtime and attention"
-    },
-    {
-      id: 5,
-      name: "Tiger",
-      age: "Adult",
-      size: "Large",
-      gender: "Male",
-      timeAtShelter: "3 months",
-      description: "Tiger is a handsome tabby who loves to lounge in sunny windows and chase laser pointers. He's been waiting for 3 months.",
-      longDescription: "Tiger is a 4-year-old Domestic Shorthair with beautiful tabby markings. He's very laid-back and loves to spend time lounging in sunny windows. Tiger enjoys gentle play with laser pointers and feather toys. He's very affectionate and loves to be brushed and petted. Tiger is litter-trained and well-behaved. He gets along well with other cats and would be perfect for a calm household. Tiger is very loyal and will follow his favorite person around the house. He would do well in a home where he can have access to sunny spots and plenty of attention.",
-      photos: [
-        "/api/placeholder/400/300/orange/FF9800?text=Tiger+1",
-        "/api/placeholder/400/300/orange/FFB74D?text=Tiger+2",
-        "/api/placeholder/400/300/orange/FFCC02?text=Tiger+3"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "14 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, neutered, FIV/FeLV negative",
-      specialNeeds: "Loves sunny spots"
-    },
-    {
-      id: 6,
-      name: "Fluffy",
-      age: "Adult",
-      size: "Medium",
-      gender: "Female",
-      timeAtShelter: "2 months",
-      description: "Fluffy is a beautiful long-haired cat who loves to be brushed and sit in laps. She's been here for 2 months.",
-      longDescription: "Fluffy is a 5-year-old Domestic Longhair with gorgeous, silky fur. She loves to be brushed and groomed and will purr loudly during grooming sessions. Fluffy is very affectionate and loves to sit in laps and be petted. She's litter-trained and well-behaved. Fluffy gets along well with other cats and would be perfect for a calm household. She enjoys gentle play with toys and loves to chase laser pointers. Fluffy would do well in a home where she can have regular grooming and plenty of attention. She's very loyal and will make a wonderful companion.",
-      photos: [
-        "/api/placeholder/400/300/pink/E91E63?text=Fluffy+1",
-        "/api/placeholder/400/300/pink/F48FB1?text=Fluffy+2"
-      ],
-      breed: "Domestic Longhair",
-      weight: "10 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children", "Cats"],
-      medicalInfo: "Vaccinated, microchipped, spayed, FIV/FeLV negative",
-      specialNeeds: "Needs regular grooming"
-    },
-    {
-      id: 7,
-      name: "Smokey",
-      age: "Senior",
-      size: "Small",
-      gender: "Male",
-      timeAtShelter: "1 month",
-      description: "Smokey is a gentle senior cat who enjoys quiet time and gentle pets. He's been with us for 1 month.",
-      longDescription: "Smokey is a 13-year-old Domestic Shorthair who is looking for a peaceful retirement home. He's very gentle and loves to be petted and brushed. Smokey enjoys quiet time and spending time in sunny spots. He's litter-trained and well-behaved. Smokey gets along well with other cats and would be perfect for a quiet household. He has some arthritis in his joints, so he needs a home without stairs. Smokey is very loyal and will make a wonderful companion for someone who wants a calm, loving cat.",
-      photos: [
-        "/api/placeholder/400/300/gray/757575?text=Smokey+1",
-        "/api/placeholder/400/300/gray/9E9E9E?text=Smokey+2"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "8 lbs",
-      energyLevel: "Low",
-      goodWith: ["Adults", "Older Children"],
-      medicalInfo: "Vaccinated, microchipped, neutered, on arthritis medication",
-      specialNeeds: "No stairs, gentle handling"
-    },
-    {
-      id: 8,
-      name: "Pepper",
-      age: "Kitten",
-      size: "Small",
-      gender: "Female",
-      timeAtShelter: "2 weeks",
-      description: "Pepper is a spunky little kitten who loves to explore and play with other cats. She's been here for 2 weeks.",
-      longDescription: "Pepper is a 4-month-old Domestic Shorthair who is full of energy and personality. She loves to explore and play with other cats. Pepper is very social and gets along well with everyone she meets. She's litter-trained and learning to use scratching posts. Pepper loves to chase toys and climb. She would be perfect for a family who can provide her with plenty of attention and playtime. Pepper is very affectionate and loves to cuddle after a good play session. She would do well in a home with other cats to play with.",
-      photos: [
-        "/api/placeholder/400/300/purple/8E24AA?text=Pepper+1",
-        "/api/placeholder/400/300/purple/AB47BC?text=Pepper+2"
-      ],
-      breed: "Domestic Shorthair",
-      weight: "4 lbs",
-      energyLevel: "High",
-      goodWith: ["Children", "Cats", "Adults"],
-      medicalInfo: "Vaccinated, microchipped, spayed, FIV/FeLV negative",
-      specialNeeds: "Needs active playtime and social interaction"
+  useEffect(() => {
+    async function fetchCats() {
+      try {
+        setLoading(true);
+        const petsData = await getPets('cat');
+        // Transform database data to match our interface
+        const transformedCats: Cat[] = petsData.map((pet: any) => ({
+          id: pet.id,
+          name: pet.name,
+          age: pet.age,
+          size: pet.size,
+          gender: pet.gender,
+          timeAtShelter: pet.time_at_shelter,
+          description: pet.description,
+          longDescription: pet.long_description,
+          photos: pet.photos || [],
+          breed: pet.breed,
+          weight: pet.weight,
+          energyLevel: pet.energy_level,
+          goodWith: pet.good_with || [],
+          medicalInfo: pet.medical_info,
+          specialNeeds: pet.special_needs
+        }));
+        setCats(transformedCats);
+      } catch (err) {
+        console.error('Error fetching cats:', err);
+        setError('Failed to load cats. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
     }
-  ];
+
+    fetchCats();
+  }, []);
+
+  // Filter cats based on selected filters
+  const filteredCats = cats.filter(cat => {
+    if (ageFilter && cat.age.toLowerCase() !== ageFilter.toLowerCase()) return false;
+    if (sizeFilter && cat.size.toLowerCase() !== sizeFilter.toLowerCase()) return false;
+    return true;
+  });
+
+  const clearFilters = () => {
+    setAgeFilter('');
+    setSizeFilter('');
+  };
 
   const openModal = (cat: Cat) => {
     setSelectedCat(cat);
@@ -306,6 +192,26 @@ export default function AdoptableCats() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        {/* Error Message */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-8">
+            <div className="flex">
+              <svg className="w-5 h-5 text-red-400 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+              </svg>
+              <p className="text-red-800">{error}</p>
+            </div>
+          </div>
+        )}
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-12">
+            <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-pink-600"></div>
+            <p className="mt-4 text-gray-600">Loading cats...</p>
+          </div>
+        )}
+
         {/* Page Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
@@ -328,6 +234,8 @@ export default function AdoptableCats() {
               </label>
               <select
                 id="age-filter"
+                value={ageFilter}
+                onChange={(e) => setAgeFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-200 text-gray-900"
               >
                 <option value="">All Ages</option>
@@ -344,6 +252,8 @@ export default function AdoptableCats() {
               </label>
               <select
                 id="size-filter"
+                value={sizeFilter}
+                onChange={(e) => setSizeFilter(e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-pink-500 focus:border-transparent transition-colors duration-200 text-gray-900"
               >
                 <option value="">All Sizes</option>
@@ -355,7 +265,10 @@ export default function AdoptableCats() {
 
             {/* Clear Filters */}
             <div className="flex items-end">
-              <button className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200">
+              <button 
+                onClick={clearFilters}
+                className="w-full bg-gray-500 hover:bg-gray-600 text-white py-2 px-4 rounded-lg font-medium transition-colors duration-200"
+              >
                 Clear Filters
               </button>
             </div>
@@ -363,15 +276,16 @@ export default function AdoptableCats() {
             {/* Results Count */}
             <div className="flex items-end">
               <p className="text-sm text-gray-600">
-                Showing <span className="font-semibold">8</span> of <span className="font-semibold">16</span> cats
+                Showing <span className="font-semibold">{filteredCats.length}</span> of <span className="font-semibold">{cats.length}</span> cats
               </p>
             </div>
           </div>
         </div>
 
         {/* Cats Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {cats.map((cat) => (
+        {!loading && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {filteredCats.map((cat) => (
             <div key={cat.id} className="bg-white rounded-xl shadow-lg border border-orange-100 overflow-hidden hover:shadow-xl transition-shadow duration-300">
               <div className="relative">
                 <div className="h-64 bg-gradient-to-br from-pink-100 to-purple-100 flex items-center justify-center">
@@ -381,7 +295,7 @@ export default function AdoptableCats() {
                     className="w-full h-full object-cover"
                   />
                 </div>
-                {cat.timeAtShelter === "10 months" && (
+                {cats.length > 0 && cat.timeAtShelter === cats[0].timeAtShelter && (
                   <div className="absolute top-2 left-2 bg-red-500 text-white px-2 py-1 rounded text-xs font-medium">
                     Longest Resident
                   </div>
@@ -419,7 +333,8 @@ export default function AdoptableCats() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        )}
 
         {/* Load More Button */}
         <div className="text-center mt-12">
