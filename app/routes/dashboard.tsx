@@ -171,10 +171,10 @@ export default function Dashboard() {
       if (currentUser?.role === 'manager') {
         // Managers can update all fields
         updateData = {
-          title: values.title,
-          description: values.description,
-          priority: values.priority,
-          notes: values.notes
+        title: values.title,
+        description: values.description,
+        priority: values.priority,
+        notes: values.notes
         };
       } else {
         // Volunteers can only update priority
@@ -307,109 +307,54 @@ export default function Dashboard() {
   return (
     <Box pos="relative" style={{ backgroundColor: theme.colors.background[0] }}>
       <LoadingOverlay visible={loading} />
-      <Container size="xl">
-        <Grid gutter="md">
-          {/* Left Sidebar - Quick Actions & Stats */}
-          <GridCol span={{ base: 12, lg: 3 }}>
-            <Stack gap="md">
-              {/* User Stats */}
-              <Card shadow="sm" padding="md" radius="md" withBorder>
-                <Group justify="space-between">
-                  <Group align="center" mb="sm">
-                                         <Avatar size="md" src={userData?.profile_photo_url || currentUser?.profile_photo_url} color="orange">
-                       {currentUser?.name.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                     </Avatar>
-                     <Box>
-                       <Text fw={600} size="sm">{currentUser?.name || 'Unknown User'}</Text>
-                       <Text size="xs" c="dimmed" style={{ textTransform: 'capitalize' }}>
-                         {currentUser?.role || 'Unknown'}
-                       </Text>
-                     </Box>
-                   </Group>
-                   <Group justify="space-between">
-                     <Box>
-                       <Text size="xs" c="dimmed">Total Hours</Text>
-                       <Text fw={700} size="lg">{userData?.total_hours || 0}</Text>
-                     </Box>
-                   </Group>
-                </Group>
-              </Card>
-
-              {/* Quick Actions */}
-              <Card shadow="sm" padding="md" radius="md" withBorder>
-                <Text fw={600} size="sm" mb="sm">Quick Actions</Text>
-                <Stack gap="xs">
-                  <Button
-                    leftSection={<IconPlus size={14} />}
-                    variant="light"
-                    size="sm"
-                    onClick={() => setShowAddTask(true)}
-                    disabled={currentUser?.role !== 'manager'}
-                    fullWidth
-                  >
-                    Add Task
-                  </Button>
-                  
-                  <Button
-                    leftSection={<IconDog size={14} />}
-                    variant="light"
-                    size="sm"
-                    onClick={() => document.getElementById('walk-form')?.scrollIntoView({ behavior: 'smooth' })}
-                    fullWidth
-                  >
-                    Log Dog Walk
-                  </Button>
-                </Stack>
-              </Card>
-            </Stack>
-          </GridCol>
-
-          {/* Main Content */}
-          <GridCol span={{ base: 12, lg: 9 }}>
-            <Grid gutter="md">
-              {/* Daily Tasks Section */}
-              <GridCol span={{ base: 12, lg: 6 }}>
+             <Container size="xl">
+         <Grid gutter="md">
+           {/* Main Content */}
+           <GridCol span={{ base: 12, lg: 12 }}>
+             <Grid gutter="md">
+            {/* Daily Tasks Section */}
+            <GridCol span={{ base: 12, lg: 6 }}>
                 <Card shadow="sm" padding="md" radius="md" withBorder>
                   <Group justify="space-between" align="center" mb="sm">
                     <Group gap="xs">
                       <ThemeIcon size="md" variant="light" color="orange">
                         <IconList size={16} />
-                      </ThemeIcon>
+                    </ThemeIcon>
                       <Text fw={600} size="sm">Daily Tasks</Text>
-                    </Group>
+                  </Group>
                     {currentUser?.role === 'manager' && (
-                      <Button
+                    <Button
                         size="xs"
                         leftSection={<IconPlus size={12} />}
-                        onClick={() => setShowAddTask(true)}
-                      >
+                      onClick={() => setShowAddTask(true)}
+                    >
                         Add
-                      </Button>
-                    )}
-                  </Group>
+                    </Button>
+                  )}
+                </Group>
                                      <Stack gap="sm">
                      {sortedTasks.length > 0 ? (
                        sortedTasks.map((task) => (
                         <Paper key={task.task_id} p="sm" withBorder radius="md">
-                          <Group justify="space-between" align="flex-start">
-                            <Box style={{ flex: 1 }}>
-                              <Group gap="xs" mb="xs">
+                        <Group justify="space-between" align="flex-start">
+                          <Box style={{ flex: 1 }}>
+                            <Group gap="xs" mb="xs">
                                 <Text fw={600} size="sm">{task.title}</Text>
                                 <Badge color={getPriorityColor(task.priority)} variant="light" size="xs">
-                                  {getPriorityLabel(task.priority)}
-                                </Badge>
-                              </Group>
-                              {task.description && (
+                                {getPriorityLabel(task.priority)}
+                              </Badge>
+                            </Group>
+                            {task.description && (
                                 <Text size="xs" c="dimmed" mb="xs">
-                                  {task.description}
-                                </Text>
-                              )}
-                              {task.notes && (
+                                {task.description}
+                              </Text>
+                            )}
+                            {task.notes && (
                                 <Text size="xs" c="blue" style={{ fontStyle: 'italic' }}>
-                                  Note: {task.notes}
-                                </Text>
-                              )}
-                            </Box>
+                                Note: {task.notes}
+                              </Text>
+                            )}
+                          </Box>
                             <Group gap="xs">
                               <ActionIcon
                                 size="xs"
@@ -428,146 +373,146 @@ export default function Dashboard() {
                                 <IconEdit size={12} />
                               </ActionIcon>
                               {currentUser?.role === 'manager' && (
-                                <ActionIcon
+                              <ActionIcon
                                   size="xs"
-                                  variant="light"
-                                  color="red"
-                                  onClick={() => handleDeleteTask(task.task_id)}
-                                >
+                                variant="light"
+                                color="red"
+                                onClick={() => handleDeleteTask(task.task_id)}
+                              >
                                   <IconTrash size={12} />
-                                </ActionIcon>
+                              </ActionIcon>
                               )}
                             </Group>
-                          </Group>
-                        </Paper>
-                      ))
-                    ) : (
+                        </Group>
+                      </Paper>
+                    ))
+                  ) : (
                       <Paper p="md" withBorder radius="md" ta="center">
                         <ThemeIcon size="md" variant="light" color="green" mb="sm">
                           <IconCheck size={20} />
-                        </ThemeIcon>
+                      </ThemeIcon>
                         <Text fw={600} size="sm" c="green">All caught up!</Text>
                         <Text size="xs" c="dimmed">No tasks assigned.</Text>
-                      </Paper>
-                    )}
-                  </Stack>
-                </Card>
-              </GridCol>
+                    </Paper>
+                  )}
+                </Stack>
+              </Card>
+            </GridCol>
 
-              {/* Dog Walking Log Section */}
-              <GridCol span={{ base: 12, lg: 6 }}>
+            {/* Dog Walking Log Section */}
+            <GridCol span={{ base: 12, lg: 6 }}>
                 <Card shadow="sm" padding="md" radius="md" withBorder>
                   <Group justify="space-between" align="center" mb="sm">
                     <Group gap="xs">
                       <ThemeIcon size="md" variant="light" color="green">
                         <IconDog size={16} />
-                      </ThemeIcon>
+                  </ThemeIcon>
                       <Text fw={600} size="sm">Dog Walking Log</Text>
                     </Group>
-                  </Group>
-                  
-                  {/* Walk Form */}
+                </Group>
+                
+                {/* Walk Form */}
                   <Paper p="md" withBorder mb="sm" radius="md" id="walk-form">
-                    <form onSubmit={walkForm.onSubmit(handleSubmitWalk)}>
+                  <form onSubmit={walkForm.onSubmit(handleSubmitWalk)}>
                       <Stack gap="sm">
-                        <Select
-                          label="Select Dog"
+                      <Select
+                        label="Select Dog"
                           placeholder="Choose a dog"
-                          data={dogs.map(dog => ({
-                            value: dog.pet_id,
-                            label: `${dog.name} (${dog.training_level})`
-                          }))}
-                          {...walkForm.getInputProps('dog_id')}
-                          required
+                        data={dogs.map(dog => ({
+                          value: dog.pet_id,
+                          label: `${dog.name} (${dog.training_level})`
+                        }))}
+                        {...walkForm.getInputProps('dog_id')}
+                        required
                           size="xs"
+                      />
+                      <Group grow>
+                        <TextInput
+                          label="Date"
+                          type="date"
+                          {...walkForm.getInputProps('walk_date')}
+                          required
+                            size="xs"
                         />
-                        <Group grow>
-                          <TextInput
-                            label="Date"
-                            type="date"
-                            {...walkForm.getInputProps('walk_date')}
-                            required
-                            size="xs"
-                          />
-                          <TextInput
+                        <TextInput
                             label="Time"
-                            type="time"
-                            {...walkForm.getInputProps('start_time')}
-                            required
+                          type="time"
+                          {...walkForm.getInputProps('start_time')}
+                          required
                             size="xs"
-                          />
-                        </Group>
-                        <Group grow>
-                          <Select
+                        />
+                      </Group>
+                      <Group grow>
+                        <Select
                             label="Duration"
-                            data={[
+                          data={[
                               { value: '15', label: '15 min' },
                               { value: '30', label: '30 min' },
                               { value: '45', label: '45 min' },
-                              { value: '60', label: '1 hour' }
-                            ]}
-                            {...walkForm.getInputProps('duration')}
+                            { value: '60', label: '1 hour' }
+                          ]}
+                          {...walkForm.getInputProps('duration')}
                             size="xs"
-                          />
-                        </Group>
-                        <Textarea
+                        />
+                      </Group>
+                      <Textarea
                           label="Notes"
                           placeholder="Any observations..."
-                          {...walkForm.getInputProps('notes')}
+                        {...walkForm.getInputProps('notes')}
                           rows={2}
                           size="xs"
-                        />
+                      />
                         <Button type="submit" leftSection={<IconPlus size={14} />} size="xs">
-                          Log Walk
-                        </Button>
-                      </Stack>
-                    </form>
-                  </Paper>
+                        Log Walk
+                      </Button>
+                    </Stack>
+                  </form>
+                </Paper>
 
-                  {/* Previous Walks */}
-                  <Box>
+                {/* Previous Walks */}
+                <Box>
                     <Text fw={600} size="sm" mb="sm">Recent Walks</Text>
                     <ScrollArea h={200}>
-                      <Stack gap="sm">
-                        {dogWalks.length > 0 ? (
-                          dogWalks.map((walk) => (
+                    <Stack gap="sm">
+                      {dogWalks.length > 0 ? (
+                        dogWalks.map((walk) => (
                             <Paper key={walk.walk_id} p="sm" withBorder radius="md">
-                              <Group justify="space-between" align="center">
-                                <Group>
+                            <Group justify="space-between" align="center">
+                              <Group>
                                   <Avatar size="xs" color="green">
                                     <IconDog size={10} />
-                                  </Avatar>
-                                  <Box>
+                                </Avatar>
+                                <Box>
                                     <Text fw={500} size="xs">
                                       {walk.pets?.name || 'Unknown Dog'}
-                                    </Text>
-                                    <Text size="xs" c="dimmed">
+                                  </Text>
+                                  <Text size="xs" c="dimmed">
                                       {new Date(walk.walk_date).toLocaleDateString()} at {walk.time_start}
-                                    </Text>
-                                  </Box>
-                                </Group>
-                                <Badge variant="light" color="green" size="xs">
-                                  {walk.duration} min
-                                </Badge>
+                                  </Text>
+                                </Box>
                               </Group>
-                              {walk.notes && (
-                                <Text size="xs" c="dimmed" mt="xs" style={{ fontStyle: 'italic' }}>
-                                  {walk.notes}
-                                </Text>
-                              )}
-                            </Paper>
-                          ))
-                        ) : (
+                                <Badge variant="light" color="green" size="xs">
+                                {walk.duration} min
+                              </Badge>
+                            </Group>
+                            {walk.notes && (
+                              <Text size="xs" c="dimmed" mt="xs" style={{ fontStyle: 'italic' }}>
+                                {walk.notes}
+                              </Text>
+                            )}
+                          </Paper>
+                        ))
+                      ) : (
                           <Paper p="md" withBorder radius="md" ta="center">
                             <Text c="dimmed" size="xs">No walks logged yet today.</Text>
-                          </Paper>
-                        )}
-                      </Stack>
-                    </ScrollArea>
-                  </Box>
-                </Card>
-              </GridCol>
-            </Grid>
+                        </Paper>
+                      )}
+                    </Stack>
+                  </ScrollArea>
+                </Box>
+              </Card>
+            </GridCol>
+          </Grid>
 
             
           </GridCol>
@@ -621,18 +566,18 @@ export default function Dashboard() {
             <Stack gap="md">
               {currentUser?.role === 'manager' ? (
                 <>
-                  <TextInput
-                    label="Task Title"
-                    placeholder="Enter task title"
-                    {...editTaskForm.getInputProps('title')}
-                    required
-                  />
-                  <Textarea
-                    label="Description"
-                    placeholder="Enter task description"
-                    {...editTaskForm.getInputProps('description')}
-                    rows={3}
-                  />
+              <TextInput
+                label="Task Title"
+                placeholder="Enter task title"
+                {...editTaskForm.getInputProps('title')}
+                required
+              />
+              <Textarea
+                label="Description"
+                placeholder="Enter task description"
+                {...editTaskForm.getInputProps('description')}
+                rows={3}
+              />
                   <Textarea
                     label="Notes (for volunteers)"
                     placeholder="Add any notes or instructions"
