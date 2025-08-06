@@ -110,7 +110,7 @@ export default function Login() {
               required
             />
 
-            <Group justify="flex-end">
+            {/* <Group justify="flex-end">
               <Link 
                 to="/auth/forgot-password" 
                 style={{ 
@@ -121,7 +121,7 @@ export default function Login() {
               >
                 Forgot password?
               </Link>
-            </Group>
+            </Group> */}
 
             <Button
               type="submit"

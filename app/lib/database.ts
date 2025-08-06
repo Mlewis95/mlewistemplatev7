@@ -215,7 +215,10 @@ export async function createMessage(message: {
   const { data, error } = await supabase
     .from('messages')
     .insert([message])
-    .select()
+    .select(`
+      *,
+      users (name)
+    `)
     .single();
   if (error) throw error;
   return data;
@@ -243,10 +246,22 @@ export async function createComment(comment: {
   const { data, error } = await supabase
     .from('comments')
     .insert([comment])
-    .select()
+    .select(`
+      *,
+      users (name)
+    `)
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function deleteComment(commentId: string) {
+  const { error } = await supabase
+    .from('comments')
+    .delete()
+    .eq('comment_id', commentId);
+  if (error) throw error;
+  return { success: true };
 }
 
 // Volunteer time functions

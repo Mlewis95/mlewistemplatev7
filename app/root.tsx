@@ -12,7 +12,7 @@ import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box
 import { Notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink, useNavigate } from 'react-router';
-import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk, IconLogout, IconUser, IconSettings } from '@tabler/icons-react';
+import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk, IconLogout, IconUser, IconSettings, IconMessage } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
@@ -103,6 +103,7 @@ function AppLayout() {
     { label: 'Dashboard', icon: IconDashboard, to: '/' },
     { label: 'Pets', icon: IconDog, to: '/pets' },
     { label: 'Dog Walking', icon: IconWalk, to: '/dog-walking' },
+    { label: 'Announcements', icon: IconMessage, to: '/announcements' },
   ];
 
   return (
@@ -151,12 +152,12 @@ function AppLayout() {
                 >
                   Profile
                 </Menu.Item>
-                <Menu.Item
+                {/* <Menu.Item
                   leftSection={<IconSettings size={14} />}
                   onClick={() => navigate('/settings')}
                 >
                   Settings
-                </Menu.Item>
+                </Menu.Item> */}
                 
                 <Menu.Divider />
                 
@@ -239,11 +240,13 @@ function AppLayout() {
           <Group gap="xs" mb="md" style={{ opacity: 0.7 }}>
             <Text size="sm" c="dimmed">Home</Text>
             <IconChevronRight size={14} />
-            <Text size="sm" fw={500}>
-              {location.pathname === '/' ? 'Dashboard' : 
-               location.pathname === '/pets' ? 'Pets' : 
-               location.pathname === '/dog-walking' ? 'Dog Walking' : 'Page'}
-            </Text>
+                         <Text size="sm" fw={500}>
+               {location.pathname === '/' ? 'Dashboard' : 
+                location.pathname === '/pets' ? 'Pets' : 
+                location.pathname === '/dog-walking' ? 'Dog Walking' : 
+                location.pathname === '/announcements' ? 'Announcements' : 
+                location.pathname === '/profile' ? 'Profile' : 'Page'}
+             </Text>
           </Group>
           <Outlet />
         </Box>
@@ -258,7 +261,7 @@ export default function App() {
   const isAuthRoute = location.pathname.startsWith('/auth');
   
   // Define our known routes
-  const knownRoutes = ['/', '/pets', '/dog-walking'];
+  const knownRoutes = ['/', '/pets', '/dog-walking', '/announcements', '/profile'];
   const isKnownRoute = knownRoutes.includes(location.pathname);
   const is404Route = !isAuthRoute && !isKnownRoute;
 

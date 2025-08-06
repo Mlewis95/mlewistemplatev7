@@ -4,6 +4,8 @@ export default [
   index("routes/dashboard.tsx"),
   route("pets", "routes/pets.tsx"),
   route("dog-walking", "routes/dog-walking.tsx"),
+  route("announcements", "routes/announcements.tsx"),
+  route("profile", "routes/profile.tsx"),
   route("auth/login", "routes/auth.login.tsx"),
   route("auth/signup", "routes/auth.signup.tsx"),
   route("*", "routes/$.tsx"),
