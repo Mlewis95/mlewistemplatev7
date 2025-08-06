@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import type { Route } from "./+types/dashboard";
 import {
   getTasks, getDogsForWalking, getDogWalks, createDogWalk,
-  getMessages, getComments, createMessage, createComment,
   updateTask, deleteTask, createTask, getUserById
 } from "~/lib/database";
 import {
@@ -37,10 +36,7 @@ export default function Dashboard() {
   const [dogs, setDogs] = useState<any[]>([]);
   const [dogWalks, setDogWalks] = useState<any[]>([]);
 
-  // State for messages
-  const [messages, setMessages] = useState<any[]>([]);
-  const [comments, setComments] = useState<{[key: string]: any[]}>({});
-  const [showAddMessage, setShowAddMessage] = useState(false);
+
 
   // Loading and error states
   const [loading, setLoading] = useState(true);
@@ -99,27 +95,7 @@ export default function Dashboard() {
     }
   });
 
-  // Form for messages
-  const messageForm = useForm({
-    initialValues: {
-      title: '',
-      content: ''
-    },
-    validate: {
-      title: (value) => value.trim().length === 0 ? 'Title is required' : null,
-      content: (value) => value.trim().length === 0 ? 'Content is required' : null
-    }
-  });
 
-  // Form for comments
-  const commentForm = useForm({
-    initialValues: {
-      content: ''
-    },
-    validate: {
-      content: (value) => value.trim().length === 0 ? 'Comment is required' : null
-    }
-  });
 
   useEffect(() => {
     loadData();
@@ -140,24 +116,15 @@ export default function Dashboard() {
         }
       }
       
-      const [tasksData, dogsData, walksData, messagesData] = await Promise.all([
+      const [tasksData, dogsData, walksData] = await Promise.all([
         getTasks(),
         getDogsForWalking(),
-        getDogWalks(currentUser?.id),
-        getMessages()
+        getDogWalks(currentUser?.id)
       ]);
 
       setTasks(tasksData);
       setDogs(dogsData);
       setDogWalks(walksData);
-      setMessages(messagesData);
-
-      // Load comments for each message
-      const commentsData: {[key: string]: any[]} = {};
-      for (const message of messagesData) {
-        commentsData[message.message_id] = await getComments(message.message_id);
-      }
-      setComments(commentsData);
 
     } catch (err) {
       console.error('Error loading data:', err);
@@ -177,9 +144,12 @@ export default function Dashboard() {
         notes: values.notes,
         created_by: currentUser?.id || ''
       });
-      setTasks([...tasks, newTask]);
       setShowAddTask(false);
       taskForm.reset();
+      
+      // Add the new task to the beginning of the list (most recent first)
+      setTasks(prevTasks => [newTask, ...prevTasks]);
+      
       notifications.show({
         title: 'Success',
         message: 'Task created successfully',
@@ -202,9 +172,16 @@ export default function Dashboard() {
         priority: values.priority,
         notes: values.notes
       });
-      setTasks(tasks.map(task => task.task_id === editingTask.task_id ? updatedTask : task));
       setEditingTask(null);
       editTaskForm.reset();
+      
+      // Update the task in the local state
+      setTasks(prevTasks => 
+        prevTasks.map(task => 
+          task.task_id === editingTask.task_id ? updatedTask : task
+        )
+      );
+      
       notifications.show({
         title: 'Success',
         message: 'Task updated successfully',
@@ -222,7 +199,10 @@ export default function Dashboard() {
   const handleDeleteTask = async (taskId: string) => {
     try {
       await deleteTask(taskId);
-      setTasks(tasks.filter(task => task.task_id !== taskId));
+      
+      // Remove the task from local state
+      setTasks(prevTasks => prevTasks.filter(task => task.task_id !== taskId));
+      
       notifications.show({
         title: 'Success',
         message: 'Task deleted successfully',
@@ -248,8 +228,11 @@ export default function Dashboard() {
         duration: values.duration,
         notes: values.notes
       });
-      setDogWalks([newWalk, ...dogWalks]);
       walkForm.reset();
+      
+      // Add the new walk to the beginning of the list (most recent first)
+      setDogWalks(prevWalks => [newWalk, ...prevWalks]);
+      
       notifications.show({
         title: 'Success',
         message: 'Walk logged successfully',
@@ -264,55 +247,7 @@ export default function Dashboard() {
     }
   };
 
-  // Message functions
-  const handleAddMessage = async (values: any) => {
-    try {
-      const newMessage = await createMessage({
-        content: `${values.title}\n\n${values.content}`,
-        posted_by: currentUser?.id || ''
-      });
-      setMessages([newMessage, ...messages]);
-      setShowAddMessage(false);
-      messageForm.reset();
-      notifications.show({
-        title: 'Success',
-        message: 'Announcement posted successfully',
-        color: 'green'
-      });
-    } catch (err) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to post announcement',
-        color: 'red'
-      });
-    }
-  };
 
-  const handleAddComment = async (messageId: string, content: string) => {
-    try {
-      const newComment = await createComment({
-        message_id: messageId,
-        content: content,
-        posted_by: currentUser?.id || ''
-      });
-      setComments({
-        ...comments,
-        [messageId]: [...(comments[messageId] || []), newComment]
-      });
-      commentForm.reset();
-      notifications.show({
-        title: 'Success',
-        message: 'Comment added successfully',
-        color: 'green'
-      });
-    } catch (err) {
-      notifications.show({
-        title: 'Error',
-        message: 'Failed to add comment',
-        color: 'red'
-      });
-    }
-  };
 
   const getPriorityColor = (priority: number) => {
     switch (priority) {
@@ -335,6 +270,9 @@ export default function Dashboard() {
       default: return 'Unknown';
     }
   };
+
+  // Sort tasks by priority (Critical first, then High, Medium, Low, Very Low)
+  const sortedTasks = [...tasks].sort((a, b) => a.priority - b.priority);
 
   if (loading) {
     return (
@@ -399,16 +337,7 @@ export default function Dashboard() {
                   >
                     Add Task
                   </Button>
-                  <Button
-                    leftSection={<IconMessage size={14} />}
-                    variant="light"
-                    size="sm"
-                    onClick={() => setShowAddMessage(true)}
-                    disabled={currentUser?.role !== 'manager'}
-                    fullWidth
-                  >
-                    Post Announcement
-                  </Button>
+                  
                   <Button
                     leftSection={<IconDog size={14} />}
                     variant="light"
@@ -446,9 +375,9 @@ export default function Dashboard() {
                       </Button>
                     )}
                   </Group>
-                  <Stack gap="sm">
-                    {tasks.length > 0 ? (
-                      tasks.map((task) => (
+                                     <Stack gap="sm">
+                     {sortedTasks.length > 0 ? (
+                       sortedTasks.map((task) => (
                         <Paper key={task.task_id} p="sm" withBorder radius="md">
                           <Group justify="space-between" align="flex-start">
                             <Box style={{ flex: 1 }}>
@@ -628,88 +557,7 @@ export default function Dashboard() {
               </GridCol>
             </Grid>
 
-            {/* Messages Section */}
-            <Card shadow="sm" padding="md" radius="md" withBorder mt="md">
-              <Group justify="space-between" align="center" mb="sm">
-                <Group gap="xs">
-                  <ThemeIcon size="md" variant="light" color="blue">
-                    <IconMessage size={16} />
-                  </ThemeIcon>
-                  <Text fw={600} size="sm">Messages & Announcements</Text>
-                </Group>
-                {currentUser?.role === 'manager' && (
-                  <Button
-                    leftSection={<IconPlus size={14} />}
-                    onClick={() => setShowAddMessage(true)}
-                    size="xs"
-                  >
-                    Post
-                  </Button>
-                )}
-              </Group>
-              <Stack gap="md">
-                {messages.length > 0 ? (
-                  messages.map((message) => (
-                    <Paper key={message.message_id} p="md" withBorder radius="md">
-                      <Group justify="space-between" align="flex-start" mb="sm">
-                        <Box style={{ flex: 1 }}>
-                          <Title order={5} mb="xs">{message.title}</Title>
-                          <Text size="xs" c="dimmed" mb="xs">
-                            Posted by {message.author_name} on {new Date(message.created_at).toLocaleDateString()}
-                          </Text>
-                          <Text size="sm">{message.content}</Text>
-                        </Box>
-                      </Group>
-                      
-                      {/* Comments */}
-                      <Divider my="sm" />
-                      <Box>
-                        <Text fw={500} size="xs" mb="sm">Comments</Text>
-                        <Stack gap="sm">
-                          {(comments[message.message_id] || []).map((comment) => (
-                            <Paper key={comment.comment_id} p="sm" withBorder radius="sm" style={{ marginLeft: '1rem' }}>
-                              <Group gap="xs" mb="xs">
-                                <Avatar size="xs" color="blue">
-                                  {comment.author_name?.split(' ').map((n: string) => n[0]).join('') || 'U'}
-                                </Avatar>
-                                <Text size="xs" fw={500}>{comment.author_name}</Text>
-                                <Text size="xs" c="dimmed">
-                                  {new Date(comment.created_at).toLocaleDateString()}
-                                </Text>
-                              </Group>
-                              <Text size="xs">{comment.content}</Text>
-                            </Paper>
-                          ))}
-                          
-                          {/* Add Comment Form */}
-                          <form onSubmit={commentForm.onSubmit((values) => {
-                            handleAddComment(message.message_id, values.content);
-                          })}>
-                            <Group gap="sm">
-                              <TextInput
-                                placeholder="Add a comment..."
-                                style={{ flex: 1 }}
-                                {...commentForm.getInputProps('content')}
-                                size="xs"
-                              />
-                              <Button size="xs" type="submit">Comment</Button>
-                            </Group>
-                          </form>
-                        </Stack>
-                      </Box>
-                    </Paper>
-                  ))
-                ) : (
-                  <Paper p="md" withBorder radius="md" ta="center">
-                    <ThemeIcon size="md" variant="light" color="blue" mb="sm">
-                      <IconMessage size={20} />
-                    </ThemeIcon>
-                    <Text fw={600} size="sm" c="blue">No Messages</Text>
-                    <Text size="xs" c="dimmed">No announcements have been posted yet.</Text>
-                  </Paper>
-                )}
-              </Stack>
-            </Card>
+            
           </GridCol>
         </Grid>
 
@@ -797,30 +645,7 @@ export default function Dashboard() {
           </form>
         </Modal>
 
-        {/* Add Message Modal */}
-        <Modal opened={showAddMessage} onClose={() => setShowAddMessage(false)} title="Post Announcement" size="md">
-          <form onSubmit={messageForm.onSubmit(handleAddMessage)}>
-            <Stack gap="md">
-              <TextInput
-                label="Announcement Title"
-                placeholder="Enter announcement title"
-                {...messageForm.getInputProps('title')}
-                required
-              />
-              <Textarea
-                label="Content"
-                placeholder="Enter announcement content"
-                {...messageForm.getInputProps('content')}
-                rows={6}
-                required
-              />
-              <Group justify="flex-end">
-                <Button variant="light" onClick={() => setShowAddMessage(false)}>Cancel</Button>
-                <Button type="submit">Post Announcement</Button>
-              </Group>
-            </Stack>
-          </form>
-        </Modal>
+        
       </Container>
     </Box>
   );
