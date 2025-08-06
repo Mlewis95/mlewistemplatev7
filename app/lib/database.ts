@@ -31,6 +31,23 @@ export async function getUserByEmail(email: string) {
   return data;
 }
 
+export async function authenticateUser(email: string, password: string) {
+  try {
+    // Get user by email
+    const user = await getUserByEmail(email);
+    
+    // In a real application, you would hash the password and compare with password_hash
+    // For now, we'll do a simple comparison (this should be replaced with proper password hashing)
+    if (user && user.password_hash === password) {
+      return { success: true, user };
+    } else {
+      return { success: false, error: 'Invalid email or password' };
+    }
+  } catch (error) {
+    return { success: false, error: 'User not found' };
+  }
+}
+
 export async function createUser(user: {
   name: string;
   email: string;

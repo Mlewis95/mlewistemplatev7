@@ -31,12 +31,17 @@ export default function DogWalking() {
   const [activeFilter, setActiveFilter] = useState<'all' | 'unwalked' | 'walked'>('all');
   const [levelFilter, setLevelFilter] = useState<string>('all');
 
-  // Mock current user (in real app, this would come from auth)
-  const currentUser = {
-    user_id: '550e8400-e29b-41d4-a716-446655440001',
-    name: 'Morgan Lewis',
-    role: 'manager' as 'volunteer' | 'manager'
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
   };
+  
+  const currentUser = getCurrentUser();
 
   // Form for adding walks
   const walkForm = useForm({
@@ -78,8 +83,17 @@ export default function DogWalking() {
 
   const handleSubmitWalk = async (values: any) => {
     try {
+      if (!currentUser?.id) {
+        notifications.show({
+          title: 'Error',
+          message: 'User not authenticated',
+          color: 'red'
+        });
+        return;
+      }
+
       const newWalk = await createDogWalk({
-        user_id: currentUser.user_id,
+        user_id: currentUser.id,
         dog_id: values.dog_id,
         walk_date: values.walk_date,
         time_start: values.start_time,
@@ -151,121 +165,120 @@ export default function DogWalking() {
   return (
     <Box pos="relative" style={{ backgroundColor: theme.colors.background[0] }}>
       <Container size="xl">
-        <Stack gap="xl">
-          {/* Header */}
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Group justify="space-between" align="center">
-              <Group>
-                <ThemeIcon size="lg" variant="light" color="green">
-                  <IconWalk size={24} />
-                </ThemeIcon>
-                <Box>
-                  <Title order={1} c="dark.8">Dog Walking</Title>
-                  <Text c="dimmed" size="sm">Track and manage daily dog walks</Text>
-                </Box>
-              </Group>
-              <Button
-                leftSection={<IconPlus size={16} />}
-                variant="gradient"
-                gradient={{ from: 'green', to: 'teal' }}
-                onClick={() => setShowAddWalk(true)}
-              >
-                Log Walk
-              </Button>
-            </Group>
-          </Card>
+        <Grid gutter="md">
+          {/* Left Sidebar - Summary & Actions */}
+          <GridCol span={{ base: 12, lg: 3 }}>
+            <Stack gap="md">
+              {/* Today's Summary */}
+              <Card shadow="sm" padding="md" radius="md" withBorder>
+                <Group align="center" mb="sm">
+                  <ThemeIcon size="md" variant="light" color="blue">
+                    <IconCalendar size={16} />
+                  </ThemeIcon>
+                  <Box>
+                    <Text fw={600} size="sm">Today's Summary</Text>
+                    <Text size="xs" c="dimmed">
+                      {new Date().toLocaleDateString('en-US', { 
+                        month: 'short', 
+                        day: 'numeric', 
+                        year: 'numeric' 
+                      })}
+                    </Text>
+                  </Box>
+                </Group>
+                <Stack gap="sm">
+                  <Paper 
+                    p="sm" 
+                    withBorder 
+                    radius="md" 
+                    ta="center"
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: activeFilter === 'unwalked' ? theme.colors.orange[0] : 'white',
+                      borderColor: activeFilter === 'unwalked' ? theme.colors.orange[3] : undefined
+                    }}
+                    onClick={() => setActiveFilter('unwalked')}
+                  >
+                    <Text size="lg" fw={700} c="orange">{dogs.length - walkedDogIds.length}</Text>
+                    <Text size="xs" c="dimmed">Need Walking</Text>
+                  </Paper>
+                  <Paper 
+                    p="sm" 
+                    withBorder 
+                    radius="md" 
+                    ta="center"
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: activeFilter === 'walked' ? theme.colors.green[0] : 'white',
+                      borderColor: activeFilter === 'walked' ? theme.colors.green[3] : undefined
+                    }}
+                    onClick={() => setActiveFilter('walked')}
+                  >
+                    <Text size="lg" fw={700} c="green">{todaysWalks.length}</Text>
+                    <Text size="xs" c="dimmed">Completed</Text>
+                  </Paper>
+                  <Paper 
+                    p="sm" 
+                    withBorder 
+                    radius="md" 
+                    ta="center"
+                    style={{ 
+                      cursor: 'pointer',
+                      backgroundColor: activeFilter === 'all' ? theme.colors.blue[0] : 'white',
+                      borderColor: activeFilter === 'all' ? theme.colors.blue[3] : undefined
+                    }}
+                    onClick={() => setActiveFilter('all')}
+                  >
+                    <Text size="lg" fw={700} c="blue">{dogs.length}</Text>
+                    <Text size="xs" c="dimmed">Total Available</Text>
+                  </Paper>
+                </Stack>
+              </Card>
 
-          {/* Today's Summary */}
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Group mb="md" justify="space-between" align="center">
-              <Group>
-                <ThemeIcon size="lg" variant="light" color="blue">
-                  <IconCalendar size={20} />
-                </ThemeIcon>
-                <Box>
-                  <Title order={3}>Today's Summary</Title>
-                  <Text size="sm" c="dimmed">
-                    {new Date().toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      year: 'numeric', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
+              {/* Quick Actions */}
+              <Card shadow="sm" padding="md" radius="md" withBorder>
+                <Text fw={600} size="sm" mb="sm">Quick Actions</Text>
+                <Stack gap="xs">
+                  <Button
+                    leftSection={<IconPlus size={14} />}
+                    variant="light"
+                    size="sm"
+                    onClick={() => setShowAddWalk(true)}
+                    fullWidth
+                  >
+                    Log Walk
+                  </Button>
+                  {(activeFilter !== 'all' || levelFilter !== 'all') && (
+                    <Button 
+                      variant="light" 
+                      size="sm" 
+                      onClick={() => {
+                        setActiveFilter('all');
+                        setLevelFilter('all');
+                      }}
+                      leftSection={<IconDog size={14} />}
+                      fullWidth
+                    >
+                      Show All Dogs
+                    </Button>
+                  )}
+                </Stack>
+              </Card>
+            </Stack>
+          </GridCol>
+
+          {/* Main Content */}
+          <GridCol span={{ base: 12, lg: 9 }}>
+            <Stack gap="md">
+
+              {/* Dogs Grid */}
+              <Card shadow="sm" padding="md" radius="md" withBorder>
+                <Group justify="space-between" align="center" mb="sm">
+                  <Text fw={600} size="sm">
+                    {activeFilter === 'all' && 'All Dogs'}
+                    {activeFilter === 'unwalked' && 'Dogs Still Need Walking'}
+                    {activeFilter === 'walked' && 'Dogs Already Walked'}
                   </Text>
-                </Box>
-              </Group>
-              <Badge size="lg" variant="light" color="blue">
-                {new Date().toLocaleDateString('en-US', { 
-                  month: 'short', 
-                  day: 'numeric', 
-                  year: 'numeric' 
-                })}
-              </Badge>
-            </Group>
-                         <Grid>
-               <GridCol span={{ base: 12, sm: 4 }}>
-                 <Paper 
-                   p="md" 
-                   withBorder 
-                   radius="md" 
-                   ta="center"
-                   style={{ 
-                     cursor: 'pointer',
-                     backgroundColor: activeFilter === 'unwalked' ? theme.colors.orange[0] : 'white',
-                     borderColor: activeFilter === 'unwalked' ? theme.colors.orange[3] : undefined
-                   }}
-                   onClick={() => setActiveFilter('unwalked')}
-                 >
-                   <Text size="lg" fw={700} c="orange">{dogs.length - walkedDogIds.length}</Text>
-                   <Text size="sm" c="dimmed">Dogs Still Need Walking</Text>
-                 </Paper>
-               </GridCol>
-               <GridCol span={{ base: 12, sm: 4 }}>
-                 <Paper 
-                   p="md" 
-                   withBorder 
-                   radius="md" 
-                   ta="center"
-                   style={{ 
-                     cursor: 'pointer',
-                     backgroundColor: activeFilter === 'walked' ? theme.colors.green[0] : 'white',
-                     borderColor: activeFilter === 'walked' ? theme.colors.green[3] : undefined
-                   }}
-                   onClick={() => setActiveFilter('walked')}
-                 >
-                   <Text size="lg" fw={700} c="green">{todaysWalks.length}</Text>
-                   <Text size="sm" c="dimmed">Walks Completed</Text>
-                 </Paper>
-               </GridCol>
-               <GridCol span={{ base: 12, sm: 4 }}>
-                 <Paper 
-                   p="md" 
-                   withBorder 
-                   radius="md" 
-                   ta="center"
-                   style={{ 
-                     cursor: 'pointer',
-                     backgroundColor: activeFilter === 'all' ? theme.colors.blue[0] : 'white',
-                     borderColor: activeFilter === 'all' ? theme.colors.blue[3] : undefined
-                   }}
-                   onClick={() => setActiveFilter('all')}
-                 >
-                   <Text size="lg" fw={700} c="blue">{dogs.length}</Text>
-                   <Text size="sm" c="dimmed">Total Dogs Available</Text>
-                 </Paper>
-               </GridCol>
-             </Grid>
-          </Card>
-
-                     {/* Dogs Grid */}
-           <Card shadow="sm" padding="lg" radius="md" withBorder>
-                           <Group justify="space-between" align="center" mb="lg">
-                <Title order={3}>
-                  {activeFilter === 'all' && 'All Dogs'}
-                  {activeFilter === 'unwalked' && 'Dogs Still Need Walking'}
-                  {activeFilter === 'walked' && 'Dogs Already Walked'}
-                </Title>
-                <Group gap="md">
                   <Select
                     placeholder="Filter by level"
                     value={levelFilter}
@@ -278,188 +291,177 @@ export default function DogWalking() {
                       { value: 'red', label: 'Red Level' },
                       { value: 'black', label: 'Black Level' }
                     ]}
-                    size="sm"
-                    style={{ minWidth: '150px' }}
+                    size="xs"
+                    style={{ minWidth: '120px' }}
                   />
-                  {(activeFilter !== 'all' || levelFilter !== 'all') && (
-                    <Button 
-                      variant="light" 
-                      size="sm" 
-                      onClick={() => {
-                        setActiveFilter('all');
-                        setLevelFilter('all');
-                      }}
-                      leftSection={<IconDog size={14} />}
-                    >
-                      Show All Dogs
-                    </Button>
-                  )}
                 </Group>
-              </Group>
-                         <Grid gutter="lg">
-               {dogs
-                 .map((dog) => {
-                   const todaysWalksForDog = getWalkStatusForDog(dog.pet_id);
-                   const hasBeenWalked = todaysWalksForDog.length > 0;
-                   const lastWalk = todaysWalksForDog[0];
-                   return { ...dog, hasBeenWalked, lastWalk };
-                 })
-                                   .filter((dog) => {
-                    // Apply walk status filter
-                    const walkStatusMatch = (() => {
-                      switch (activeFilter) {
-                        case 'unwalked':
-                          return !dog.hasBeenWalked;
-                        case 'walked':
-                          return dog.hasBeenWalked;
-                        default:
-                          return true; // 'all' - show all dogs
-                      }
-                    })();
+                <Grid gutter="md">
+                  {dogs
+                    .map((dog) => {
+                      const todaysWalksForDog = getWalkStatusForDog(dog.pet_id);
+                      const hasBeenWalked = todaysWalksForDog.length > 0;
+                      const lastWalk = todaysWalksForDog[0];
+                      return { ...dog, hasBeenWalked, lastWalk };
+                    })
+                    .filter((dog) => {
+                      // Apply walk status filter
+                      const walkStatusMatch = (() => {
+                        switch (activeFilter) {
+                          case 'unwalked':
+                            return !dog.hasBeenWalked;
+                          case 'walked':
+                            return dog.hasBeenWalked;
+                          default:
+                            return true; // 'all' - show all dogs
+                        }
+                      })();
 
-                    // Apply level filter
-                    const levelMatch = levelFilter === 'all' || 
-                      dog.training_level.toLowerCase() === levelFilter.toLowerCase();
+                      // Apply level filter
+                      const levelMatch = levelFilter === 'all' || 
+                        dog.training_level.toLowerCase() === levelFilter.toLowerCase();
 
-                    return walkStatusMatch && levelMatch;
-                  })
-                 .sort((a, b) => {
-                   // Sort unwalked dogs first, then walked dogs
-                   if (a.hasBeenWalked && !b.hasBeenWalked) return 1;
-                   if (!a.hasBeenWalked && b.hasBeenWalked) return -1;
-                   return 0;
-                 })
-                 .map((dog) => (
-                   <GridCol key={dog.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
-                     <Paper p="md" withBorder radius="md" style={{
-                       borderColor: dog.hasBeenWalked ? theme.colors.green[3] : theme.colors.gray[3],
-                       backgroundColor: dog.hasBeenWalked ? theme.colors.green[0] : 'white',
-                       height: '280px',
-                       display: 'flex',
-                       flexDirection: 'column'
-                     }}>
-                       <Group justify="space-between" align="flex-start" mb="sm">
-                         <Group>
-                           <Avatar size="md" color={dog.hasBeenWalked ? "green" : "gray"}>
-                             <IconDog size={20} />
-                           </Avatar>
-                           <Box>
-                             <Text fw={600} size="lg">{dog.name}</Text>
-                             <Badge 
-                               color={getLevelColor(dog.training_level)} 
-                               variant="light"
-                               size="sm"
-                             >
-                               {dog.training_level} Level
-                             </Badge>
-                           </Box>
-                         </Group>
-                         {dog.hasBeenWalked && (
-                           <ThemeIcon size="sm" color="green" variant="filled">
-                             <IconCheck size={14} />
-                           </ThemeIcon>
-                         )}
-                       </Group>
+                      return walkStatusMatch && levelMatch;
+                    })
+                    .sort((a, b) => {
+                      // Sort unwalked dogs first, then walked dogs
+                      if (a.hasBeenWalked && !b.hasBeenWalked) return 1;
+                      if (!a.hasBeenWalked && b.hasBeenWalked) return -1;
+                      return 0;
+                    })
+                    .map((dog) => (
+                      <GridCol key={dog.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
+                        <Paper p="sm" withBorder radius="md" style={{
+                          borderColor: dog.hasBeenWalked ? theme.colors.green[3] : theme.colors.gray[3],
+                          backgroundColor: dog.hasBeenWalked ? theme.colors.green[0] : 'white',
+                          height: '200px',
+                          display: 'flex',
+                          flexDirection: 'column'
+                        }}>
+                          <Group justify="space-between" align="flex-start" mb="xs">
+                            <Group gap="xs">
+                              <Avatar size="sm" color={dog.hasBeenWalked ? "green" : "gray"}>
+                                <IconDog size={14} />
+                              </Avatar>
+                              <Box>
+                                <Text fw={600} size="sm">{dog.name}</Text>
+                                <Badge 
+                                  color={getLevelColor(dog.training_level)} 
+                                  variant="light"
+                                  size="xs"
+                                >
+                                  {dog.training_level} Level
+                                </Badge>
+                              </Box>
+                            </Group>
+                            {dog.hasBeenWalked && (
+                              <ThemeIcon size="xs" color="green" variant="filled">
+                                <IconCheck size={10} />
+                              </ThemeIcon>
+                            )}
+                          </Group>
 
-                       <Box style={{ flex: 1 }}>
-                         {dog.hasBeenWalked ? (
-                           <Stack gap="xs">
-                             <Group gap="xs">
-                               <IconClockHour4 size={14} />
-                               <Text size="sm" c="dimmed">
-                                 Walked at {dog.lastWalk.time_start}
-                               </Text>
-                             </Group>
-                             <Group gap="xs">
-                               <IconClock size={14} />
-                               <Text size="sm" c="dimmed">
-                                 Duration: {dog.lastWalk.duration} min
-                               </Text>
-                             </Group>
-                             {dog.lastWalk.notes && (
-                               <Group gap="xs">
-                                 <IconNotes size={14} />
-                                 <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
-                                   {dog.lastWalk.notes}
-                                 </Text>
-                               </Group>
-                             )}
-                           </Stack>
-                         ) : (
-                           <Text size="sm" c="dimmed" style={{ fontStyle: 'italic' }}>
-                             Not walked today
-                           </Text>
-                         )}
-                       </Box>
+                          <Box style={{ flex: 1 }}>
+                            {dog.hasBeenWalked ? (
+                              <Stack gap="xs">
+                                <Group gap="xs">
+                                  <IconClockHour4 size={12} />
+                                  <Text size="xs" c="dimmed">
+                                    Walked at {dog.lastWalk.time_start}
+                                  </Text>
+                                </Group>
+                                <Group gap="xs">
+                                  <IconClock size={12} />
+                                  <Text size="xs" c="dimmed">
+                                    Duration: {dog.lastWalk.duration} min
+                                  </Text>
+                                </Group>
+                                {dog.lastWalk.notes && (
+                                  <Group gap="xs">
+                                    <IconNotes size={12} />
+                                    <Text size="xs" c="dimmed" style={{ fontStyle: 'italic' }}>
+                                      {dog.lastWalk.notes}
+                                    </Text>
+                                  </Group>
+                                )}
+                              </Stack>
+                            ) : (
+                              <Text size="xs" c="dimmed" style={{ fontStyle: 'italic' }}>
+                                Not walked today
+                              </Text>
+                            )}
+                          </Box>
 
-                       <Button
-                         variant="light"
-                         color={dog.hasBeenWalked ? "green" : "orange"}
-                         fullWidth
-                         mt="auto"
-                         onClick={() => {
-                           if (!dog.hasBeenWalked) {
-                             walkForm.setValues({
-                               dog_id: dog.pet_id,
-                               walk_date: new Date().toISOString().split('T')[0],
-                               start_time: '',
-                               duration: '30',
-                               notes: ''
-                             });
-                             setShowAddWalk(true);
-                           }
-                         }}
-                         leftSection={dog.hasBeenWalked ? <IconCheck size={16} /> : <IconWalk size={16} />}
-                       >
-                         {dog.hasBeenWalked ? 'Already Walked' : 'Log Walk'}
-                       </Button>
-                     </Paper>
-                   </GridCol>
-                 ))}
-            </Grid>
-          </Card>
+                          <Button
+                            variant="light"
+                            color={dog.hasBeenWalked ? "green" : "orange"}
+                            fullWidth
+                            mt="auto"
+                            size="xs"
+                            onClick={() => {
+                              if (!dog.hasBeenWalked) {
+                                walkForm.setValues({
+                                  dog_id: dog.pet_id,
+                                  walk_date: new Date().toISOString().split('T')[0],
+                                  start_time: '',
+                                  duration: '30',
+                                  notes: ''
+                                });
+                                setShowAddWalk(true);
+                              }
+                            }}
+                            leftSection={dog.hasBeenWalked ? <IconCheck size={12} /> : <IconWalk size={12} />}
+                          >
+                            {dog.hasBeenWalked ? 'Already Walked' : 'Log Walk'}
+                          </Button>
+                        </Paper>
+                      </GridCol>
+                    ))}
+                </Grid>
+              </Card>
 
-          {/* Today's Walks List */}
-          {todaysWalks.length > 0 && (
-            <Card shadow="sm" padding="lg" radius="md" withBorder>
-              <Title order={3} mb="lg">Today's Walks</Title>
-              <Stack gap="md">
-                {todaysWalks.map((walk) => (
-                  <Paper key={walk.walk_id} p="md" withBorder radius="md">
-                    <Group justify="space-between" align="center">
-                      <Group>
-                        <Avatar size="sm" color="green">
-                          <IconDog size={14} />
-                        </Avatar>
-                        <Box>
-                          <Text fw={500} size="sm">
-                            {walk.pets?.name || 'Unknown Dog'}
+              {/* Today's Walks List */}
+              {todaysWalks.length > 0 && (
+                <Card shadow="sm" padding="md" radius="md" withBorder>
+                  <Text fw={600} size="sm" mb="sm">Today's Walks</Text>
+                  <Stack gap="sm">
+                    {todaysWalks.map((walk) => (
+                      <Paper key={walk.walk_id} p="sm" withBorder radius="md">
+                        <Group justify="space-between" align="center">
+                          <Group>
+                            <Avatar size="xs" color="green">
+                              <IconDog size={10} />
+                            </Avatar>
+                            <Box>
+                              <Text fw={500} size="xs">
+                                {walk.pets?.name || 'Unknown Dog'}
+                              </Text>
+                              <Text size="xs" c="dimmed">
+                                Walked by {walk.users?.name || 'Unknown User'}
+                              </Text>
+                            </Box>
+                          </Group>
+                          <Group gap="sm">
+                            <Badge variant="light" color="green" size="xs">
+                              {walk.time_start}
+                            </Badge>
+                            <Badge variant="light" color="blue" size="xs">
+                              {walk.duration} min
+                            </Badge>
+                          </Group>
+                        </Group>
+                        {walk.notes && (
+                          <Text size="xs" c="dimmed" mt="xs" style={{ fontStyle: 'italic' }}>
+                            {walk.notes}
                           </Text>
-                          <Text size="xs" c="dimmed">
-                            Walked by {walk.users?.name || 'Unknown User'}
-                          </Text>
-                        </Box>
-                      </Group>
-                      <Group gap="md">
-                        <Badge variant="light" color="green">
-                          {walk.time_start}
-                        </Badge>
-                        <Badge variant="light" color="blue">
-                          {walk.duration} min
-                        </Badge>
-                      </Group>
-                    </Group>
-                    {walk.notes && (
-                      <Text size="sm" c="dimmed" mt="xs" style={{ fontStyle: 'italic' }}>
-                        {walk.notes}
-                      </Text>
-                    )}
-                  </Paper>
-                ))}
-              </Stack>
-            </Card>
-          )}
-        </Stack>
+                        )}
+                      </Paper>
+                    ))}
+                  </Stack>
+                </Card>
+              )}
+            </Stack>
+          </GridCol>
+        </Grid>
 
         {/* Add Walk Modal */}
         <Modal 
