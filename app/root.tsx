@@ -212,6 +212,12 @@ function AppLayout() {
                           e.currentTarget.style.backgroundColor = 'transparent';
                         }
                       }}
+                      onClick={() => {
+                        // Close mobile menu when a link is clicked
+                        if (window.innerWidth < 768) { // sm breakpoint is typically 768px
+                          toggle();
+                        }
+                      }}
                     >
                       <Group>
                         <Icon size={20} />
@@ -222,52 +228,50 @@ function AppLayout() {
                 </NavLink>
               );
             })}
-          </Box>
-        </AppShell.Section>
-
-        {/* Mobile User Menu */}
-        <AppShell.Section hiddenFrom="sm">
-          <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
-            {currentUser && (
-              <Group mb="md">
-                <Avatar color="orange" radius="xl" size="md">
-                  {currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
-                </Avatar>
-                <Box>
-                  <Text size="sm" fw={500}>{currentUser.name}</Text>
-                  <Text size="xs" c="dimmed" style={{ textTransform: 'capitalize' }}>
-                    {currentUser.role}
-                  </Text>
-                </Box>
-              </Group>
-            )}
-            <Stack gap="xs">
-              <Button
-                variant="light"
-                leftSection={<IconUser size={16} />}
-                onClick={() => {
-                  navigate('/profile');
-                  toggle(); // Close mobile menu
-                }}
-                fullWidth
-                justify="flex-start"
-              >
-                Profile
-              </Button>
-              <Button
-                variant="light"
-                color="red"
-                leftSection={<IconLogout size={16} />}
-                onClick={() => {
-                  handleSignOut();
-                  toggle(); // Close mobile menu
-                }}
-                fullWidth
-                justify="flex-start"
-              >
-                Sign Out
-              </Button>
-            </Stack>
+            
+            {/* Mobile User Menu */}
+            <Box hiddenFrom="sm" mt="lg" p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+              {currentUser && (
+                <Group mb="md">
+                  <Avatar color="orange" radius="xl" size="md">
+                    {currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                  </Avatar>
+                  <Box>
+                    <Text size="sm" fw={500}>{currentUser.name}</Text>
+                    <Text size="xs" c="dimmed" style={{ textTransform: 'capitalize' }}>
+                      {currentUser.role}
+                    </Text>
+                  </Box>
+                </Group>
+              )}
+              <Stack gap="xs">
+                <Button
+                  variant="light"
+                  leftSection={<IconUser size={16} />}
+                  onClick={() => {
+                    navigate('/profile');
+                    toggle(); // Close mobile menu
+                  }}
+                  fullWidth
+                  justify="flex-start"
+                >
+                  Profile
+                </Button>
+                <Button
+                  variant="light"
+                  color="red"
+                  leftSection={<IconLogout size={16} />}
+                  onClick={() => {
+                    handleSignOut();
+                    toggle(); // Close mobile menu
+                  }}
+                  fullWidth
+                  justify="flex-start"
+                >
+                  Sign Out
+                </Button>
+              </Stack>
+            </Box>
           </Box>
         </AppShell.Section>
 
