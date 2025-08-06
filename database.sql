@@ -28,7 +28,9 @@ CREATE TABLE users (
     role VARCHAR(20) CHECK (role IN ('volunteer', 'manager')) NOT NULL DEFAULT 'volunteer',
     orientation_completed BOOLEAN NOT NULL DEFAULT FALSE,
     total_hours NUMERIC(6,2) DEFAULT 0,
-    profile_photo_url TEXT
+    profile_photo_url TEXT,
+    created_at TIMESTAMP DEFAULT NOW(),
+    updated_at TIMESTAMP DEFAULT NOW()
 );
 
 -- ========================

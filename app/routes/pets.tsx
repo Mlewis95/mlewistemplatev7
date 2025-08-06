@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import type { Route } from "./+types/pets";
-import { getPets, updatePet } from "~/lib/database";
+import { getPets, updatePet, createPet, deletePet } from "~/lib/database";
 import {
   Container, Title, Text, Card, Group, Button, Badge, Stack,
   Tabs, Switch, Grid, GridCol, Avatar, Paper, Modal, Box,
@@ -9,7 +9,7 @@ import {
 } from '@mantine/core';
 import {
   IconDog, IconCat, IconHeart, IconEdit, IconPhoto,
-  IconAlertCircle, IconHome, IconUser, IconStar, IconFilter
+  IconAlertCircle, IconHome, IconUser, IconStar, IconFilter, IconTrash
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
@@ -31,6 +31,7 @@ export default function Pets() {
   const [selectedPet, setSelectedPet] = useState<any>(null);
   const [showPetModal, setShowPetModal] = useState(false);
   const [editingPet, setEditingPet] = useState<any>(null);
+  const [showAddPet, setShowAddPet] = useState(false);
   
   // Dog filters
   const [dogFilters, setDogFilters] = useState({
@@ -60,6 +61,29 @@ export default function Pets() {
     name: 'Morgan Lewis',
     role: 'manager' as 'volunteer' | 'manager'
   };
+
+  // Form for creating new pets
+  const addPetForm = useForm({
+    initialValues: {
+      name: '',
+      species: 'dog' as 'dog' | 'cat',
+      training_level: '',
+      notes: '',
+      is_fosterable: false,
+      age_category: '',
+      size: '',
+      gender: '',
+      good_with_kids: false,
+      good_with_dogs: false,
+      good_with_cats: false,
+      photo_url: ''
+    },
+    validate: {
+      name: (value) => value.trim().length === 0 ? 'Name is required' : null,
+      species: (value) => !value ? 'Species is required' : null,
+      training_level: (value) => !value ? 'Training level is required' : null
+    }
+  });
 
   // Form for editing pet details
   const editPetForm = useForm({
@@ -119,6 +143,40 @@ export default function Pets() {
     }
   }
 
+  const handleAddPet = async (values: any) => {
+    try {
+      const newPet = await createPet({
+        name: values.name,
+        species: values.species,
+        training_level: values.training_level,
+        notes: values.notes,
+        is_fosterable: values.is_fosterable,
+        age_category: values.age_category,
+        size: values.size,
+        gender: values.gender,
+        good_with_kids: values.good_with_kids,
+        good_with_dogs: values.good_with_dogs,
+        good_with_cats: values.good_with_cats,
+        photo_url: values.photo_url
+      });
+      setPets([newPet, ...pets]);
+      setShowAddPet(false);
+      addPetForm.reset();
+      notifications.show({
+        title: 'Success',
+        message: 'Pet added successfully',
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Error adding pet:', err);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to add pet',
+        color: 'red'
+      });
+    }
+  };
+
   const handleEditPet = async (values: any) => {
     try {
       const updatedPet = await updatePet(editingPet.pet_id, {
@@ -147,6 +205,29 @@ export default function Pets() {
       notifications.show({
         title: 'Error',
         message: 'Failed to update pet details',
+        color: 'red'
+      });
+    }
+  };
+
+  const handleDeletePet = async (petId: string, petName: string) => {
+    if (!confirm(`Are you sure you want to delete ${petName}? This action cannot be undone.`)) {
+      return;
+    }
+    
+    try {
+      await deletePet(petId);
+      setPets(pets.filter(pet => pet.pet_id !== petId));
+      notifications.show({
+        title: 'Success',
+        message: `${petName} has been deleted successfully`,
+        color: 'green'
+      });
+    } catch (err) {
+      console.error('Error deleting pet:', err);
+      notifications.show({
+        title: 'Error',
+        message: 'Failed to delete pet',
         color: 'red'
       });
     }
@@ -298,27 +379,44 @@ export default function Pets() {
         <Grid gutter="md">
                      {/* Left Sidebar - Pet Types */}
            <GridCol span={{ base: 12, lg: 3 }}>
-             <Card shadow="sm" padding="md" radius="md" withBorder>
-               <Text fw={600} size="sm" mb="sm">Pet Types</Text>
-               <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="orange">
-                 <Tabs.List>
-                   <Tabs.Tab 
-                     value="dogs" 
-                     leftSection={<IconDog size={14} />}
+             <Stack gap="md">
+               <Card shadow="sm" padding="md" radius="md" withBorder>
+                 <Text fw={600} size="sm" mb="sm">Pet Types</Text>
+                 <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="orange">
+                   <Tabs.List>
+                     <Tabs.Tab 
+                       value="dogs" 
+                       leftSection={<IconDog size={14} />}
+                       size="sm"
+                     >
+                       Dogs ({pets.filter(p => p.species === 'dog').length})
+                     </Tabs.Tab>
+                     <Tabs.Tab 
+                       value="cats" 
+                       leftSection={<IconCat size={14} />}
+                       size="sm"
+                     >
+                       Cats ({pets.filter(p => p.species === 'cat').length})
+                     </Tabs.Tab>
+                   </Tabs.List>
+                 </Tabs>
+               </Card>
+
+               {currentUser.role === 'manager' && (
+                 <Card shadow="sm" padding="md" radius="md" withBorder>
+                   <Text fw={600} size="sm" mb="sm">Quick Actions</Text>
+                   <Button
+                     leftSection={<IconHeart size={14} />}
+                     variant="light"
                      size="sm"
+                     onClick={() => setShowAddPet(true)}
+                     fullWidth
                    >
-                     Dogs ({pets.filter(p => p.species === 'dog').length})
-                   </Tabs.Tab>
-                   <Tabs.Tab 
-                     value="cats" 
-                     leftSection={<IconCat size={14} />}
-                     size="sm"
-                   >
-                     Cats ({pets.filter(p => p.species === 'cat').length})
-                   </Tabs.Tab>
-                 </Tabs.List>
-               </Tabs>
-             </Card>
+                     Add New Pet
+                   </Button>
+                 </Card>
+               )}
+             </Stack>
            </GridCol>
 
           {/* Main Content */}
@@ -432,28 +530,13 @@ export default function Pets() {
                   {getFilteredDogs().map((pet) => (
                                          <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
                        <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                         <Card.Section pos="relative">
+                         <Card.Section>
                            <Image
                              src={getPetImage(pet)}
                              height={200}
                              alt={pet.name}
                              fallbackSrc="https://placehold.co/400x200?text=No+Photo"
                            />
-                           {getLongestResident('dog')?.pet_id === pet.pet_id && (
-                             <Badge 
-                               color="red" 
-                               variant="filled" 
-                               size="sm"
-                               style={{
-                                 position: 'absolute',
-                                 top: 8,
-                                 right: 8,
-                                 zIndex: 10
-                               }}
-                             >
-                               Longest Resident
-                             </Badge>
-                           )}
                          </Card.Section>
 
                          <Stack gap="sm" mt="md" style={{ flex: 1 }}>
@@ -462,28 +545,37 @@ export default function Pets() {
                                <Title order={3} size="h4">{pet.name}</Title>
                              </Box>
                              {currentUser.role === 'manager' && (
-                               <ActionIcon
-                                 variant="light"
-                                 color="blue"
-                                 onClick={() => {
-                                   setEditingPet(pet);
-                                   editPetForm.setValues({
-                                     name: pet.name,
-                                     notes: pet.notes || '',
-                                     training_level: pet.training_level,
-                                     is_fosterable: pet.is_fosterable,
-                                     age_category: pet.age_category || '',
-                                     size: pet.size || '',
-                                     gender: pet.gender || '',
-                                     good_with_kids: pet.good_with_kids || false,
-                                     good_with_dogs: pet.good_with_dogs || false,
-                                     good_with_cats: pet.good_with_cats || false,
-                                     photo_url: pet.photo_url || ''
-                                   });
-                                 }}
-                               >
-                                 <IconEdit size={16} />
-                               </ActionIcon>
+                               <Group gap="xs">
+                                 <ActionIcon
+                                   variant="light"
+                                   color="blue"
+                                   onClick={() => {
+                                     setEditingPet(pet);
+                                     editPetForm.setValues({
+                                       name: pet.name,
+                                       notes: pet.notes || '',
+                                       training_level: pet.training_level,
+                                       is_fosterable: pet.is_fosterable,
+                                       age_category: pet.age_category || '',
+                                       size: pet.size || '',
+                                       gender: pet.gender || '',
+                                       good_with_kids: pet.good_with_kids || false,
+                                       good_with_dogs: pet.good_with_dogs || false,
+                                       good_with_cats: pet.good_with_cats || false,
+                                       photo_url: pet.photo_url || ''
+                                     });
+                                   }}
+                                 >
+                                   <IconEdit size={16} />
+                                 </ActionIcon>
+                                 <ActionIcon
+                                   variant="light"
+                                   color="red"
+                                   onClick={() => handleDeletePet(pet.pet_id, pet.name)}
+                                 >
+                                   <IconTrash size={16} />
+                                 </ActionIcon>
+                               </Group>
                              )}
                            </Group>
 
@@ -692,28 +784,13 @@ export default function Pets() {
                   {getFilteredCats().map((pet) => (
                                          <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
                        <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
-                         <Card.Section pos="relative">
+                         <Card.Section>
                            <Image
                              src={getPetImage(pet)}
                              height={200}
                              alt={pet.name}
                              fallbackSrc="https://placehold.co/400x200?text=No+Photo"
                            />
-                           {getLongestResident('cat')?.pet_id === pet.pet_id && (
-                             <Badge 
-                               color="red" 
-                               variant="filled" 
-                               size="sm"
-                               style={{
-                                 position: 'absolute',
-                                 top: 8,
-                                 right: 8,
-                                 zIndex: 10
-                               }}
-                             >
-                               Longest Resident
-                             </Badge>
-                           )}
                          </Card.Section>
 
                          <Stack gap="sm" mt="md" style={{ flex: 1 }}>
@@ -722,28 +799,37 @@ export default function Pets() {
                                <Title order={3} size="h4">{pet.name}</Title>
                              </Box>
                              {currentUser.role === 'manager' && (
-                               <ActionIcon
-                                 variant="light"
-                                 color="blue"
-                                 onClick={() => {
-                                   setEditingPet(pet);
-                                   editPetForm.setValues({
-                                     name: pet.name,
-                                     notes: pet.notes || '',
-                                     training_level: pet.training_level,
-                                     is_fosterable: pet.is_fosterable,
-                                     age_category: pet.age_category || '',
-                                     size: pet.size || '',
-                                     gender: pet.gender || '',
-                                     good_with_kids: pet.good_with_kids || false,
-                                     good_with_dogs: pet.good_with_dogs || false,
-                                     good_with_cats: pet.good_with_cats || false,
-                                     photo_url: pet.photo_url || ''
-                                   });
-                                 }}
-                               >
-                                 <IconEdit size={16} />
-                               </ActionIcon>
+                               <Group gap="xs">
+                                 <ActionIcon
+                                   variant="light"
+                                   color="blue"
+                                   onClick={() => {
+                                     setEditingPet(pet);
+                                     editPetForm.setValues({
+                                       name: pet.name,
+                                       notes: pet.notes || '',
+                                       training_level: pet.training_level,
+                                       is_fosterable: pet.is_fosterable,
+                                       age_category: pet.age_category || '',
+                                       size: pet.size || '',
+                                       gender: pet.gender || '',
+                                       good_with_kids: pet.good_with_kids || false,
+                                       good_with_dogs: pet.good_with_dogs || false,
+                                       good_with_cats: pet.good_with_cats || false,
+                                       photo_url: pet.photo_url || ''
+                                     });
+                                   }}
+                                 >
+                                   <IconEdit size={16} />
+                                 </ActionIcon>
+                                 <ActionIcon
+                                   variant="light"
+                                   color="red"
+                                   onClick={() => handleDeletePet(pet.pet_id, pet.name)}
+                                 >
+                                   <IconTrash size={16} />
+                                 </ActionIcon>
+                               </Group>
                              )}
                            </Group>
 
@@ -1058,6 +1144,150 @@ export default function Pets() {
                 </Button>
                 <Button type="submit">
                   Update Pet
+                </Button>
+              </Group>
+            </Stack>
+          </form>
+        </Modal>
+
+        {/* Add Pet Modal */}
+        <Modal 
+          opened={showAddPet} 
+          onClose={() => setShowAddPet(false)} 
+          title="Add New Pet" 
+          size="lg"
+        >
+          <form onSubmit={addPetForm.onSubmit(handleAddPet)}>
+            <Stack gap="md">
+              <TextInput
+                label="Pet Name"
+                placeholder="Enter pet name"
+                {...addPetForm.getInputProps('name')}
+                required
+              />
+              
+              <Select
+                label="Species"
+                data={[
+                  { value: 'dog', label: 'Dog' },
+                  { value: 'cat', label: 'Cat' }
+                ]}
+                {...addPetForm.getInputProps('species')}
+                required
+              />
+              
+              <Select
+                label="Training Level"
+                data={[
+                  { value: 'Green', label: 'Green - Beginner friendly' },
+                  { value: 'Yellow', label: 'Yellow - Some experience needed' },
+                  { value: 'Blue', label: 'Blue - Moderate experience' },
+                  { value: 'Red', label: 'Red - Experienced handler' },
+                  { value: 'Black', label: 'Black - Professional level' }
+                ]}
+                {...addPetForm.getInputProps('training_level')}
+                required
+              />
+              
+              <Textarea
+                label="Temperament Notes"
+                placeholder="Describe the pet's temperament, behavior, and any special needs..."
+                {...addPetForm.getInputProps('notes')}
+                rows={4}
+              />
+              
+              <Switch
+                label="Available for fostering"
+                {...addPetForm.getInputProps('is_fosterable', { type: 'checkbox' })}
+                color="green"
+              />
+
+              <Divider label="Pet Image" labelPosition="center" />
+
+              <TextInput
+                label="Image URL"
+                placeholder="Enter image URL (e.g., https://example.com/pet-photo.jpg)"
+                {...addPetForm.getInputProps('photo_url')}
+                description="Provide a direct link to the pet's photo"
+              />
+
+              {addPetForm.values.photo_url && (
+                <Box>
+                  <Text size="sm" fw={500} mb="xs">Preview:</Text>
+                  <Image
+                    src={addPetForm.values.photo_url}
+                    height={150}
+                    alt="Pet preview"
+                    fallbackSrc="https://placehold.co/400x200?text=Invalid+Image+URL"
+                    radius="md"
+                  />
+                </Box>
+              )}
+
+              <Divider label="Additional Details" labelPosition="center" />
+
+              <Select
+                label="Age Category"
+                placeholder="Select age category"
+                data={[
+                  { value: 'puppy', label: 'Puppy/Kitten' },
+                  { value: 'adult', label: 'Adult' },
+                  { value: 'senior', label: 'Senior' }
+                ]}
+                {...addPetForm.getInputProps('age_category')}
+                clearable
+              />
+
+              <Select
+                label="Size"
+                placeholder="Select size"
+                data={[
+                  { value: 'small', label: 'Small' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'large', label: 'Large' }
+                ]}
+                {...addPetForm.getInputProps('size')}
+                clearable
+              />
+
+              <Select
+                label="Gender"
+                placeholder="Select gender"
+                data={[
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' }
+                ]}
+                {...addPetForm.getInputProps('gender')}
+                clearable
+              />
+
+              <Divider label="Compatibility" labelPosition="center" />
+
+              <Stack gap="xs">
+                <Text size="sm" fw={500}>Good With:</Text>
+                <Switch
+                  label="Kids"
+                  {...addPetForm.getInputProps('good_with_kids', { type: 'checkbox' })}
+                  color="green"
+                />
+                <Switch
+                  label="Dogs"
+                  {...addPetForm.getInputProps('good_with_dogs', { type: 'checkbox' })}
+                  color="blue"
+                />
+                <Switch
+                  label="Cats"
+                  {...addPetForm.getInputProps('good_with_cats', { type: 'checkbox' })}
+                  color="orange"
+                />
+              </Stack>
+              
+              <Group justify="flex-end">
+                <Button variant="light" onClick={() => setShowAddPet(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit">
+                  Add Pet
                 </Button>
               </Group>
             </Stack>

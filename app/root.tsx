@@ -12,7 +12,7 @@ import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box
 import { Notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink, useNavigate } from 'react-router';
-import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk, IconLogout, IconUser, IconSettings, IconMessage } from '@tabler/icons-react';
+import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk, IconLogout, IconUser, IconSettings, IconMessage, IconUsers } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
@@ -105,6 +105,11 @@ function AppLayout() {
     { label: 'Dog Walking', icon: IconWalk, to: '/dog-walking' },
     { label: 'Announcements', icon: IconMessage, to: '/announcements' },
   ];
+
+  // Add manager-only navigation items
+  if (currentUser?.role === 'manager') {
+    navItems.push({ label: 'Volunteers', icon: IconUsers, to: '/volunteers' });
+  }
 
   return (
     <AppShell
@@ -295,7 +300,8 @@ function AppLayout() {
                 location.pathname === '/pets' ? 'Pets' : 
                 location.pathname === '/dog-walking' ? 'Dog Walking' : 
                 location.pathname === '/announcements' ? 'Announcements' : 
-                location.pathname === '/profile' ? 'Profile' : 'Page'}
+                location.pathname === '/profile' ? 'Profile' : 
+                location.pathname === '/volunteers' ? 'Volunteers' : 'Page'}
              </Text>
           </Group>
           <Outlet />
@@ -311,7 +317,7 @@ export default function App() {
   const isAuthRoute = location.pathname.startsWith('/auth');
   
   // Define our known routes
-  const knownRoutes = ['/', '/pets', '/dog-walking', '/announcements', '/profile'];
+  const knownRoutes = ['/', '/pets', '/dog-walking', '/announcements', '/profile', '/volunteers'];
   const isKnownRoute = knownRoutes.includes(location.pathname);
   const is404Route = !isAuthRoute && !isKnownRoute;
 

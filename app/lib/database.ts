@@ -66,7 +66,10 @@ export async function createUser(user: {
 export async function updateUser(id: string, updates: Partial<Database['users']['Row']>) {
   const { data, error } = await supabase
     .from('users')
-    .update(updates)
+    .update({
+      ...updates,
+      updated_at: new Date().toISOString()
+    })
     .eq('user_id', id)
     .select()
     .single();
@@ -94,6 +97,29 @@ export async function getDogsForWalking() {
   return data;
 }
 
+export async function createPet(pet: {
+  name: string;
+  species: 'dog' | 'cat';
+  training_level: string;
+  is_fosterable?: boolean;
+  photo_url?: string;
+  notes?: string;
+  age_category?: string;
+  size?: string;
+  gender?: string;
+  good_with_kids?: boolean;
+  good_with_dogs?: boolean;
+  good_with_cats?: boolean;
+}) {
+  const { data, error } = await supabase
+    .from('pets')
+    .insert([pet])
+    .select()
+    .single();
+  if (error) throw error;
+  return data;
+}
+
 export async function updatePet(id: string, updates: Partial<Database['pets']['Row']>) {
   const { data, error } = await supabase
     .from('pets')
@@ -103,6 +129,14 @@ export async function updatePet(id: string, updates: Partial<Database['pets']['R
     .single();
   if (error) throw error;
   return data;
+}
+
+export async function deletePet(id: string) {
+  const { error } = await supabase
+    .from('pets')
+    .delete()
+    .eq('pet_id', id);
+  if (error) throw error;
 }
 
 // Dog walk functions

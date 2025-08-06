@@ -190,13 +190,6 @@ export default function Profile() {
                     </Group>
                   </Box>
                 </Group>
-                <Button
-                  leftSection={<IconEdit size={16} />}
-                  onClick={() => setIsEditing(true)}
-                  disabled={isEditing}
-                >
-                  Edit Profile
-                </Button>
               </Group>
 
               {/* Stats */}
@@ -218,66 +211,122 @@ export default function Profile() {
             <Card shadow="sm" padding="xl" radius="md" withBorder>
               <Group justify="space-between" align="center" mb="lg">
                 <Title order={3} size="h4">Profile Information</Title>
-                {isEditing && (
+                {!isEditing ? (
+                  <Button
+                    leftSection={<IconEdit size={16} />}
+                    onClick={() => setIsEditing(true)}
+                  >
+                    Edit Profile
+                  </Button>
+                ) : (
                   <Group gap="xs">
                     <Button variant="light" onClick={handleCancelEdit}>
                       Cancel
                     </Button>
-                                         <Button 
-                       onClick={() => profileForm.onSubmit(handleSaveProfile)()}
-                       loading={saving}
-                       leftSection={<IconCheck size={16} />}
-                     >
-                       Save Changes
-                     </Button>
+                    <Button 
+                      onClick={() => profileForm.onSubmit(handleSaveProfile)()}
+                      loading={saving}
+                      leftSection={<IconCheck size={16} />}
+                    >
+                      Save Changes
+                    </Button>
                   </Group>
                 )}
               </Group>
 
-              <form onSubmit={profileForm.onSubmit(handleSaveProfile)}>
-                <Stack gap="lg">
-                  <TextInput
-                    label="Full Name"
-                    placeholder="Enter your full name"
-                    leftSection={<IconUser size={16} />}
-                    {...profileForm.getInputProps('name')}
-                    disabled={!isEditing}
-                    required
-                  />
+                             {!isEditing ? (
+                 <Stack gap="lg">
+                   <Box>
+                     <Group gap="xs" mb="xs">
+                       <IconUser size={16} color="var(--mantine-color-blue-6)" />
+                       <Text size="sm" c="dimmed">Full Name</Text>
+                     </Group>
+                     <Text size="md" fw={500}>{userData?.name || 'Not provided'}</Text>
+                   </Box>
 
-                  <TextInput
-                    label="Email Address"
-                    placeholder="Enter your email"
-                    leftSection={<IconMail size={16} />}
-                    {...profileForm.getInputProps('email')}
-                    disabled={!isEditing}
-                    required
-                  />
+                   <Box>
+                     <Group gap="xs" mb="xs">
+                       <IconMail size={16} color="var(--mantine-color-blue-6)" />
+                       <Text size="sm" c="dimmed">Email Address</Text>
+                     </Group>
+                     <Text size="md" fw={500}>{userData?.email || 'Not provided'}</Text>
+                   </Box>
 
-                  <TextInput
-                    label="Profile Photo URL"
-                    placeholder="Enter URL for profile photo"
-                    leftSection={<IconPhoto size={16} />}
-                    {...profileForm.getInputProps('profile_photo_url')}
-                    disabled={!isEditing}
-                  />
+                   <Box>
+                     <Group gap="xs" mb="xs">
+                       <IconPhoto size={16} color="var(--mantine-color-blue-6)" />
+                       <Text size="sm" c="dimmed">Profile Photo URL</Text>
+                     </Group>
+                     {userData?.profile_photo_url ? (
+                       <Text component="a" href={userData.profile_photo_url} target="_blank" c="blue" style={{ textDecoration: 'underline' }}>
+                         View Photo
+                       </Text>
+                     ) : (
+                       <Text size="md" fw={500}>Not provided</Text>
+                     )}
+                   </Box>
 
-                  <TextInput
-                    label="Role"
-                    value={userData?.role || 'Unknown'}
-                    leftSection={<IconCrown size={16} />}
-                    disabled
-                    style={{ textTransform: 'capitalize' }}
-                  />
+                   <Box>
+                     <Group gap="xs" mb="xs">
+                       <IconCrown size={16} color="var(--mantine-color-orange-6)" />
+                       <Text size="sm" c="dimmed">Role</Text>
+                     </Group>
+                     <Text size="md" fw={500} style={{ textTransform: 'capitalize' }}>
+                       {userData?.role || 'Unknown'}
+                     </Text>
+                   </Box>
 
-                  <TextInput
-                    label="Total Hours"
-                    value={userData?.total_hours || 0}
-                    leftSection={<IconClock size={16} />}
-                    disabled
-                  />
-                </Stack>
-              </form>
+                   <Box>
+                     <Group gap="xs" mb="xs">
+                       <IconClock size={16} color="var(--mantine-color-blue-6)" />
+                       <Text size="sm" c="dimmed">Total Hours</Text>
+                     </Group>
+                     <Text size="md" fw={500}>{userData?.total_hours || 0} hours</Text>
+                   </Box>
+                 </Stack>
+               ) : (
+                 <form onSubmit={profileForm.onSubmit(handleSaveProfile)}>
+                   <Stack gap="lg">
+                     <TextInput
+                       label="Full Name"
+                       placeholder="Enter your full name"
+                       leftSection={<IconUser size={16} />}
+                       {...profileForm.getInputProps('name')}
+                       required
+                     />
+
+                     <TextInput
+                       label="Email Address"
+                       placeholder="Enter your email"
+                       leftSection={<IconMail size={16} />}
+                       {...profileForm.getInputProps('email')}
+                       required
+                     />
+
+                     <TextInput
+                       label="Profile Photo URL"
+                       placeholder="Enter URL for profile photo"
+                       leftSection={<IconPhoto size={16} />}
+                       {...profileForm.getInputProps('profile_photo_url')}
+                     />
+
+                     <TextInput
+                       label="Role"
+                       value={userData?.role || 'Unknown'}
+                       leftSection={<IconCrown size={16} />}
+                       disabled
+                       style={{ textTransform: 'capitalize' }}
+                     />
+
+                     <TextInput
+                       label="Total Hours"
+                       value={userData?.total_hours || 0}
+                       leftSection={<IconClock size={16} />}
+                       disabled
+                     />
+                   </Stack>
+                 </form>
+               )}
             </Card>
           </GridCol>
 
@@ -286,38 +335,29 @@ export default function Profile() {
             <Card shadow="sm" padding="xl" radius="md" withBorder>
               <Title order={3} size="h4" mb="lg">Account Information</Title>
               
-              <Stack gap="md">
-                <Box>
-                  <Text size="sm" c="dimmed" mb="xs">User ID</Text>
-                  <Text size="sm" fw={500} style={{ fontFamily: 'monospace' }}>
-                    {userData?.user_id || 'Unknown'}
-                  </Text>
-                </Box>
+                             <Stack gap="md">
+                 <Box>
+                   <Text size="sm" c="dimmed" mb="xs">Member Since</Text>
+                   <Text size="sm" fw={500}>
+                     {userData?.created_at ? 
+                       new Date(userData.created_at).toLocaleDateString() : 
+                       'Unknown'
+                     }
+                   </Text>
+                 </Box>
 
-                <Divider />
+                 <Divider />
 
-                <Box>
-                  <Text size="sm" c="dimmed" mb="xs">Member Since</Text>
-                  <Text size="sm" fw={500}>
-                    {userData?.created_at ? 
-                      new Date(userData.created_at).toLocaleDateString() : 
-                      'Unknown'
-                    }
-                  </Text>
-                </Box>
-
-                <Divider />
-
-                <Box>
-                  <Text size="sm" c="dimmed" mb="xs">Last Updated</Text>
-                  <Text size="sm" fw={500}>
-                    {userData?.updated_at ? 
-                      new Date(userData.updated_at).toLocaleDateString() : 
-                      'Unknown'
-                    }
-                  </Text>
-                </Box>
-              </Stack>
+                 <Box>
+                   <Text size="sm" c="dimmed" mb="xs">Last Updated</Text>
+                   <Text size="sm" fw={500}>
+                     {userData?.updated_at ? 
+                       new Date(userData.updated_at).toLocaleDateString() : 
+                       'Unknown'
+                     }
+                   </Text>
+                 </Box>
+               </Stack>
             </Card>
           </GridCol>
         </Grid>
