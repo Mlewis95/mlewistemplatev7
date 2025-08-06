@@ -141,6 +141,12 @@ export default function DogWalking() {
     return dogWalks.filter(walk => walk.walk_date === today);
   };
 
+  const getWalkedDogIds = () => {
+    const today = new Date().toISOString().split('T')[0];
+    const todaysWalks = dogWalks.filter(walk => walk.walk_date === today);
+    return [...new Set(todaysWalks.map(walk => walk.dog_id))]; // Remove duplicates
+  };
+
   if (loading) {
     return (
       <Container size="xl">
@@ -160,7 +166,7 @@ export default function DogWalking() {
   }
 
   const todaysWalks = getTodaysWalks();
-  const walkedDogIds = todaysWalks.map(walk => walk.dog_id);
+  const walkedDogIds = getWalkedDogIds();
 
   return (
     <Box pos="relative" style={{ backgroundColor: theme.colors.background[0] }}>
@@ -214,7 +220,7 @@ export default function DogWalking() {
                     }}
                     onClick={() => setActiveFilter('walked')}
                   >
-                    <Text size="lg" fw={700} c="green">{todaysWalks.length}</Text>
+                    <Text size="lg" fw={700} c="green">{walkedDogIds.length}</Text>
                     <Text size="xs" c="dimmed">Completed</Text>
                   </Paper>
                   <Paper 
