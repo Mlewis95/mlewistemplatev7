@@ -8,7 +8,7 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box, Avatar, Menu, ActionIcon } from '@mantine/core';
+import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box, Avatar, Menu, ActionIcon, Stack, Button } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink, useNavigate } from 'react-router';
@@ -126,7 +126,7 @@ function AppLayout() {
               <Text size="xs" c="dimmed">Volunteer Management System</Text>
             </Box>
           </Group>
-          <Group>
+          <Group visibleFrom="sm">
             <Menu shadow="md" width={200} position="bottom-end">
               <Menu.Target>
                 <Group style={{ cursor: 'pointer' }}>
@@ -222,6 +222,52 @@ function AppLayout() {
                 </NavLink>
               );
             })}
+          </Box>
+        </AppShell.Section>
+
+        {/* Mobile User Menu */}
+        <AppShell.Section hiddenFrom="sm">
+          <Box p="md" style={{ borderTop: '1px solid var(--mantine-color-gray-3)' }}>
+            {currentUser && (
+              <Group mb="md">
+                <Avatar color="orange" radius="xl" size="md">
+                  {currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
+                </Avatar>
+                <Box>
+                  <Text size="sm" fw={500}>{currentUser.name}</Text>
+                  <Text size="xs" c="dimmed" style={{ textTransform: 'capitalize' }}>
+                    {currentUser.role}
+                  </Text>
+                </Box>
+              </Group>
+            )}
+            <Stack gap="xs">
+              <Button
+                variant="light"
+                leftSection={<IconUser size={16} />}
+                onClick={() => {
+                  navigate('/profile');
+                  toggle(); // Close mobile menu
+                }}
+                fullWidth
+                justify="flex-start"
+              >
+                Profile
+              </Button>
+              <Button
+                variant="light"
+                color="red"
+                leftSection={<IconLogout size={16} />}
+                onClick={() => {
+                  handleSignOut();
+                  toggle(); // Close mobile menu
+                }}
+                fullWidth
+                justify="flex-start"
+              >
+                Sign Out
+              </Button>
+            </Stack>
           </Box>
         </AppShell.Section>
 

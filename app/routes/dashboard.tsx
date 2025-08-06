@@ -166,12 +166,24 @@ export default function Dashboard() {
 
   const handleUpdateTask = async (values: any) => {
     try {
-      const updatedTask = await updateTask(editingTask.task_id, {
-        title: values.title,
-        description: values.description,
-        priority: values.priority,
-        notes: values.notes
-      });
+      let updateData;
+      
+      if (currentUser?.role === 'manager') {
+        // Managers can update all fields
+        updateData = {
+          title: values.title,
+          description: values.description,
+          priority: values.priority,
+          notes: values.notes
+        };
+      } else {
+        // Volunteers can only update priority
+        updateData = {
+          priority: values.priority
+        };
+      }
+      
+      const updatedTask = await updateTask(editingTask.task_id, updateData);
       setEditingTask(null);
       editTaskForm.reset();
       
@@ -398,24 +410,24 @@ export default function Dashboard() {
                                 </Text>
                               )}
                             </Box>
-                            {currentUser?.role === 'manager' && (
-                              <Group gap="xs">
-                                <ActionIcon
-                                  size="xs"
-                                  variant="light"
-                                  color="blue"
-                                  onClick={() => {
-                                    setEditingTask(task);
-                                    editTaskForm.setValues({
-                                      title: task.title,
-                                      description: task.description || '',
-                                      priority: task.priority.toString(),
-                                      notes: task.notes || ''
-                                    });
-                                  }}
-                                >
-                                  <IconEdit size={12} />
-                                </ActionIcon>
+                            <Group gap="xs">
+                              <ActionIcon
+                                size="xs"
+                                variant="light"
+                                color="blue"
+                                onClick={() => {
+                                  setEditingTask(task);
+                                  editTaskForm.setValues({
+                                    title: task.title,
+                                    description: task.description || '',
+                                    priority: task.priority.toString(),
+                                    notes: task.notes || ''
+                                  });
+                                }}
+                              >
+                                <IconEdit size={12} />
+                              </ActionIcon>
+                              {currentUser?.role === 'manager' && (
                                 <ActionIcon
                                   size="xs"
                                   variant="light"
@@ -424,8 +436,8 @@ export default function Dashboard() {
                                 >
                                   <IconTrash size={12} />
                                 </ActionIcon>
-                              </Group>
-                            )}
+                              )}
+                            </Group>
                           </Group>
                         </Paper>
                       ))
@@ -607,18 +619,51 @@ export default function Dashboard() {
         <Modal opened={!!editingTask} onClose={() => setEditingTask(null)} title="Edit Task" size="md">
           <form onSubmit={editTaskForm.onSubmit(handleUpdateTask)}>
             <Stack gap="md">
-              <TextInput
-                label="Task Title"
-                placeholder="Enter task title"
-                {...editTaskForm.getInputProps('title')}
-                required
-              />
-              <Textarea
-                label="Description"
-                placeholder="Enter task description"
-                {...editTaskForm.getInputProps('description')}
-                rows={3}
-              />
+              {currentUser?.role === 'manager' ? (
+                <>
+                  <TextInput
+                    label="Task Title"
+                    placeholder="Enter task title"
+                    {...editTaskForm.getInputProps('title')}
+                    required
+                  />
+                  <Textarea
+                    label="Description"
+                    placeholder="Enter task description"
+                    {...editTaskForm.getInputProps('description')}
+                    rows={3}
+                  />
+                  <Textarea
+                    label="Notes (for volunteers)"
+                    placeholder="Add any notes or instructions"
+                    {...editTaskForm.getInputProps('notes')}
+                    rows={2}
+                  />
+                </>
+              ) : (
+                <>
+                  <TextInput
+                    label="Task Title"
+                    placeholder="Enter task title"
+                    value={editingTask?.title || ''}
+                    disabled
+                  />
+                  <Textarea
+                    label="Description"
+                    placeholder="Enter task description"
+                    value={editingTask?.description || ''}
+                    rows={3}
+                    disabled
+                  />
+                  <Textarea
+                    label="Notes (for volunteers)"
+                    placeholder="Add any notes or instructions"
+                    value={editingTask?.notes || ''}
+                    rows={2}
+                    disabled
+                  />
+                </>
+              )}
               <Select
                 label="Priority"
                 data={[
@@ -630,12 +675,6 @@ export default function Dashboard() {
                 ]}
                 {...editTaskForm.getInputProps('priority')}
                 required
-              />
-              <Textarea
-                label="Notes (for volunteers)"
-                placeholder="Add any notes or instructions"
-                {...editTaskForm.getInputProps('notes')}
-                rows={2}
               />
               <Group justify="flex-end">
                 <Button variant="light" onClick={() => setEditingTask(null)}>Cancel</Button>
