@@ -66,10 +66,7 @@ export async function createUser(user: {
 export async function updateUser(id: string, updates: Partial<Database['users']['Row']>) {
   const { data, error } = await supabase
     .from('users')
-    .update({
-      ...updates,
-      updated_at: new Date().toISOString()
-    })
+    .update(updates)
     .eq('user_id', id)
     .select()
     .single();
