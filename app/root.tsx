@@ -11,7 +11,7 @@ import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box
 import { Notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
 import { NavLink } from 'react-router';
-import { IconDashboard, IconDog, IconHome, IconChevronRight } from '@tabler/icons-react';
+import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
@@ -75,6 +75,7 @@ function AppShellDemo() {
   const navItems = [
     { label: 'Dashboard', icon: IconDashboard, to: '/' },
     { label: 'Pets', icon: IconDog, to: '/pets' },
+    { label: 'Dog Walking', icon: IconWalk, to: '/dog-walking' },
   ];
 
   return (
@@ -170,7 +171,8 @@ function AppShellDemo() {
             <IconChevronRight size={14} />
             <Text size="sm" fw={500}>
               {location.pathname === '/' ? 'Dashboard' : 
-               location.pathname === '/pets' ? 'Pets' : 'Page'}
+               location.pathname === '/pets' ? 'Pets' : 
+               location.pathname === '/dog-walking' ? 'Dog Walking' : 'Page'}
             </Text>
           </Group>
           <Outlet />
