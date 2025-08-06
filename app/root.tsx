@@ -1,3 +1,4 @@
+import React from "react";
 import {
   isRouteErrorResponse,
   Links,
@@ -7,11 +8,11 @@ import {
   ScrollRestoration,
   useLocation,
 } from "react-router";
-import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box } from '@mantine/core';
+import { MantineProvider, createTheme, AppShell, Burger, Group, Title, Text, Box, Avatar, Menu, ActionIcon } from '@mantine/core';
 import { Notifications } from '@mantine/notifications';
 import { useDisclosure } from '@mantine/hooks';
-import { NavLink } from 'react-router';
-import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk } from '@tabler/icons-react';
+import { NavLink, useNavigate } from 'react-router';
+import { IconDashboard, IconDog, IconHome, IconChevronRight, IconWalk, IconLogout, IconUser, IconSettings } from '@tabler/icons-react';
 import '@mantine/core/styles.css';
 import '@mantine/notifications/styles.css';
 
@@ -68,9 +69,35 @@ export function Layout({ children }: { children: React.ReactNode }) {
   );
 }
 
-function AppShellDemo() {
+// Auth Layout - No AppShell
+function AuthLayout() {
+  return <Outlet />;
+}
+
+// Main App Layout with AppShell
+function AppLayout() {
   const [opened, { toggle }] = useDisclosure();
   const location = useLocation();
+  const navigate = useNavigate();
+  
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  };
+  
+  const currentUser = getCurrentUser();
+
+  const handleSignOut = () => {
+    // Clear user data from localStorage
+    localStorage.removeItem('currentUser');
+    // Redirect to login page
+    navigate('/auth/login');
+  };
 
   const navItems = [
     { label: 'Dashboard', icon: IconDashboard, to: '/' },
@@ -98,56 +125,99 @@ function AppShellDemo() {
               <Text size="xs" c="dimmed">Volunteer Management System</Text>
             </Box>
           </Group>
-          <Box style={{ display: 'flex', alignItems: 'center' }}>
-            <Text size="sm" c="dimmed">Welcome, Morgan Lewis</Text>
-          </Box>
+          <Group>
+            <Menu shadow="md" width={200} position="bottom-end">
+              <Menu.Target>
+                <Group style={{ cursor: 'pointer' }}>
+                  <Avatar color="orange" radius="xl">
+                    {currentUser ? currentUser.name.split(' ').map((n: string) => n[0]).join('').toUpperCase() : 'U'}
+                  </Avatar>
+                  {currentUser && (
+                    <Box>
+                      <Text size="sm" fw={500}>{currentUser.name}</Text>
+                      <Text size="xs" c="dimmed" style={{ textTransform: 'capitalize' }}>
+                        {currentUser.role}
+                      </Text>
+                    </Box>
+                  )}
+                </Group>
+              </Menu.Target>
+
+              <Menu.Dropdown>
+                <Menu.Label>User Menu</Menu.Label>
+                <Menu.Item
+                  leftSection={<IconUser size={14} />}
+                  onClick={() => navigate('/profile')}
+                >
+                  Profile
+                </Menu.Item>
+                <Menu.Item
+                  leftSection={<IconSettings size={14} />}
+                  onClick={() => navigate('/settings')}
+                >
+                  Settings
+                </Menu.Item>
+                
+                <Menu.Divider />
+                
+                <Menu.Item
+                  color="red"
+                  leftSection={<IconLogout size={14} />}
+                  onClick={handleSignOut}
+                >
+                  Sign Out
+                </Menu.Item>
+              </Menu.Dropdown>
+            </Menu>
+          </Group>
         </Group>
       </AppShell.Header>
 
-      <AppShell.Navbar p="md" style={{ backgroundColor: 'white', borderRight: '1px solid var(--mantine-color-gray-3)' }}>
-        <AppShell.Section>
-          <Title order={4} mb="lg" c="dark.8">Navigation</Title>
-        </AppShell.Section>
-        
+      <AppShell.Navbar p="md">
         <AppShell.Section grow>
           <Box>
             {navItems.map((item) => {
               const Icon = item.icon;
-              const isActive = location.pathname === item.to;
-              
               return (
                 <NavLink
                   key={item.to}
                   to={item.to}
-                  style={{ textDecoration: 'none', color: 'inherit' }}
+                  style={({ isActive }) => ({
+                    textDecoration: 'none',
+                    color: 'inherit',
+                    display: 'block',
+                    marginBottom: '4px',
+                  })}
                 >
-                  <Box
-                    p="md"
-                    mb="xs"
-                    style={{
-                      borderRadius: '8px',
-                      backgroundColor: isActive ? 'var(--mantine-color-orange-1)' : 'transparent',
-                      border: isActive ? '1px solid var(--mantine-color-orange-3)' : '1px solid transparent',
-                      color: isActive ? 'var(--mantine-color-orange-7)' : 'inherit',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                    }}
-                    onMouseEnter={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-1)';
-                      }
-                    }}
-                    onMouseLeave={(e) => {
-                      if (!isActive) {
-                        e.currentTarget.style.backgroundColor = 'transparent';
-                      }
-                    }}
-                  >
-                    <Group>
-                      <Icon size={20} />
-                      <Text fw={isActive ? 600 : 400}>{item.label}</Text>
-                    </Group>
-                  </Box>
+                  {({ isActive }) => (
+                    <Box
+                      p="md"
+                      mb="xs"
+                      style={{
+                        borderRadius: '8px',
+                        backgroundColor: isActive ? 'var(--mantine-color-orange-1)' : 'transparent',
+                        border: isActive ? '1px solid var(--mantine-color-orange-3)' : '1px solid transparent',
+                        color: isActive ? 'var(--mantine-color-orange-7)' : 'inherit',
+                        cursor: 'pointer',
+                        transition: 'all 0.2s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'var(--mantine-color-gray-1)';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!isActive) {
+                          e.currentTarget.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
+                      <Group>
+                        <Icon size={20} />
+                        <Text fw={isActive ? 600 : 400}>{item.label}</Text>
+                      </Group>
+                    </Box>
+                  )}
                 </NavLink>
               );
             })}
@@ -183,10 +253,38 @@ function AppShellDemo() {
 }
 
 export default function App() {
+  const location = useLocation();
+  const navigate = useNavigate();
+  const isAuthRoute = location.pathname.startsWith('/auth');
+  
+  // Define our known routes
+  const knownRoutes = ['/', '/pets', '/dog-walking'];
+  const isKnownRoute = knownRoutes.includes(location.pathname);
+  const is404Route = !isAuthRoute && !isKnownRoute;
+
+  // Get current user from localStorage
+  const getCurrentUser = () => {
+    try {
+      const userData = localStorage.getItem('currentUser');
+      return userData ? JSON.parse(userData) : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const currentUser = getCurrentUser();
+
+  // Route protection - redirect to login if not authenticated and not on auth route
+  React.useEffect(() => {
+    if (!isAuthRoute && !is404Route && !currentUser) {
+      navigate('/auth/login');
+    }
+  }, [isAuthRoute, is404Route, currentUser, navigate]);
+
   return (
     <MantineProvider theme={theme}>
       <Notifications />
-      <AppShellDemo />
+      {isAuthRoute || is404Route ? <AuthLayout /> : <AppLayout />}
     </MantineProvider>
   );
 }

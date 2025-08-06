@@ -295,513 +295,557 @@ export default function Pets() {
   return (
     <Box pos="relative" style={{ backgroundColor: theme.colors.background[0] }}>
       <Container size="xl">
-        <Stack gap="xl">
-          {/* Header */}
-          <Card shadow="sm" padding="lg" radius="md" withBorder>
-            <Group justify="space-between" align="center">
-              <Box>
-                <Title order={1} c="dark.8">Pets</Title>
-                <Text c="dimmed" size="sm">Find your perfect companion</Text>
-              </Box>
-              <Group>
-                <Switch
-                  label="Show fosterable only"
-                  checked={showFosterableOnly}
-                  onChange={(event) => setShowFosterableOnly(event.currentTarget.checked)}
-                  color="orange"
-                />
-              </Group>
-            </Group>
-          </Card>
+        <Grid gutter="md">
+                     {/* Left Sidebar - Pet Types */}
+           <GridCol span={{ base: 12, lg: 3 }}>
+             <Card shadow="sm" padding="md" radius="md" withBorder>
+               <Text fw={600} size="sm" mb="sm">Pet Types</Text>
+               <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="orange">
+                 <Tabs.List>
+                   <Tabs.Tab 
+                     value="dogs" 
+                     leftSection={<IconDog size={14} />}
+                     size="sm"
+                   >
+                     Dogs ({pets.filter(p => p.species === 'dog').length})
+                   </Tabs.Tab>
+                   <Tabs.Tab 
+                     value="cats" 
+                     leftSection={<IconCat size={14} />}
+                     size="sm"
+                   >
+                     Cats ({pets.filter(p => p.species === 'cat').length})
+                   </Tabs.Tab>
+                 </Tabs.List>
+               </Tabs>
+             </Card>
+           </GridCol>
 
-          {/* Tabs */}
-          <Tabs value={activeTab} onChange={setActiveTab} variant="pills" color="orange">
-            <Tabs.List justify="center" mb="xl">
-              <Tabs.Tab 
-                value="dogs" 
-                leftSection={<IconDog size={16} />}
-                size="lg"
-              >
-                Dogs ({pets.filter(p => p.species === 'dog').length})
-              </Tabs.Tab>
-              <Tabs.Tab 
-                value="cats" 
-                leftSection={<IconCat size={16} />}
-                size="lg"
-              >
-                Cats ({pets.filter(p => p.species === 'cat').length})
-              </Tabs.Tab>
-            </Tabs.List>
+          {/* Main Content */}
+          <GridCol span={{ base: 12, lg: 9 }}>
+            <Tabs value={activeTab} onChange={setActiveTab}>
+              <Tabs.Panel value="dogs">
+                                 {/* Dog Filters */}
+                 <Card shadow="sm" padding="md" radius="md" withBorder mb="md">
+                   <Group justify="space-between" align="center" mb="sm">
+                     <Group gap="xs">
+                       <IconFilter size={16} />
+                       <Text fw={600} size="sm">Dog Filters</Text>
+                     </Group>
+                     <Group>
+                       <Switch
+                         label="Show fosterable only"
+                         checked={showFosterableOnly}
+                         onChange={(event) => setShowFosterableOnly(event.currentTarget.checked)}
+                         color="orange"
+                         size="sm"
+                       />
+                       <Button
+                         variant="light"
+                         size="xs"
+                         onClick={() => setShowDogFilters(!showDogFilters)}
+                       >
+                         {showDogFilters ? 'Hide' : 'Show'}
+                       </Button>
+                       <Button
+                         variant="light"
+                         color="red"
+                         size="xs"
+                         onClick={clearDogFilters}
+                       >
+                         Clear
+                       </Button>
+                     </Group>
+                   </Group>
 
-            <Tabs.Panel value="dogs">
-              {/* Dog Filters */}
-              <Card shadow="sm" padding="lg" radius="md" withBorder mb="lg">
-                <Group justify="space-between" align="center" mb="md">
-                  <Group>
-                    <IconFilter size={20} />
-                    <Title order={4}>Dog Filters</Title>
-                  </Group>
-                  <Group>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => setShowDogFilters(!showDogFilters)}
-                    >
-                      {showDogFilters ? 'Hide Filters' : 'Show Filters'}
-                    </Button>
-                    <Button
-                      variant="light"
-                      color="red"
-                      size="sm"
-                      onClick={clearDogFilters}
-                    >
-                      Clear All
-                    </Button>
-                  </Group>
-                </Group>
-
-                {showDogFilters && (
-                  <Grid gutter="md">
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Age"
-                        placeholder="Select age"
-                        data={[
-                          { value: 'puppy', label: 'Puppy' },
-                          { value: 'adult', label: 'Adult' },
-                          { value: 'senior', label: 'Senior' }
-                        ]}
-                        value={dogFilters.age}
-                        onChange={(value) => setDogFilters({ ...dogFilters, age: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Size"
-                        placeholder="Select size"
-                        data={[
-                          { value: 'small', label: 'Small' },
-                          { value: 'medium', label: 'Medium' },
-                          { value: 'large', label: 'Large' }
-                        ]}
-                        value={dogFilters.size}
-                        onChange={(value) => setDogFilters({ ...dogFilters, size: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Gender"
-                        placeholder="Select gender"
-                        data={[
-                          { value: 'male', label: 'Male' },
-                          { value: 'female', label: 'Female' }
-                        ]}
-                        value={dogFilters.gender}
-                        onChange={(value) => setDogFilters({ ...dogFilters, gender: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Stack gap="xs">
-                        <Text size="sm" fw={500}>Good With:</Text>
-                        <Switch
-                          label="Kids"
-                          checked={dogFilters.goodWithKids}
-                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithKids: event.currentTarget.checked })}
-                          size="sm"
+                  {showDogFilters && (
+                    <Grid gutter="md">
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Age"
+                          placeholder="Select age"
+                          data={[
+                            { value: 'puppy', label: 'Puppy' },
+                            { value: 'adult', label: 'Adult' },
+                            { value: 'senior', label: 'Senior' }
+                          ]}
+                          value={dogFilters.age}
+                          onChange={(value) => setDogFilters({ ...dogFilters, age: value || '' })}
+                          clearable
                         />
-                        <Switch
-                          label="Other Dogs"
-                          checked={dogFilters.goodWithDogs}
-                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithDogs: event.currentTarget.checked })}
-                          size="sm"
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Size"
+                          placeholder="Select size"
+                          data={[
+                            { value: 'small', label: 'Small' },
+                            { value: 'medium', label: 'Medium' },
+                            { value: 'large', label: 'Large' }
+                          ]}
+                          value={dogFilters.size}
+                          onChange={(value) => setDogFilters({ ...dogFilters, size: value || '' })}
+                          clearable
                         />
-                        <Switch
-                          label="Cats"
-                          checked={dogFilters.goodWithCats}
-                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithCats: event.currentTarget.checked })}
-                          size="sm"
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Gender"
+                          placeholder="Select gender"
+                          data={[
+                            { value: 'male', label: 'Male' },
+                            { value: 'female', label: 'Female' }
+                          ]}
+                          value={dogFilters.gender}
+                          onChange={(value) => setDogFilters({ ...dogFilters, gender: value || '' })}
+                          clearable
                         />
-                      </Stack>
-                    </GridCol>
-                  </Grid>
-                )}
-              </Card>
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Stack gap="xs">
+                          <Text size="sm" fw={500}>Good With:</Text>
+                          <Switch
+                            label="Kids"
+                            checked={dogFilters.goodWithKids}
+                            onChange={(event) => setDogFilters({ ...dogFilters, goodWithKids: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                          <Switch
+                            label="Other Dogs"
+                            checked={dogFilters.goodWithDogs}
+                            onChange={(event) => setDogFilters({ ...dogFilters, goodWithDogs: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                          <Switch
+                            label="Cats"
+                            checked={dogFilters.goodWithCats}
+                            onChange={(event) => setDogFilters({ ...dogFilters, goodWithCats: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                        </Stack>
+                      </GridCol>
+                    </Grid>
+                  )}
+                </Card>
 
-              <Grid gutter="lg">
-                {getFilteredDogs().map((pet) => (
-                  <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
-                      <Card.Section>
-                        <Image
-                          src={getPetImage(pet)}
-                          height={200}
-                          alt={pet.name}
-                          fallbackSrc="https://placehold.co/400x200?text=No+Photo"
-                        />
-                      </Card.Section>
-
-                      <Stack gap="sm" mt="md">
-                        <Group justify="space-between" align="flex-start">
-                          <Box style={{ flex: 1 }}>
-                            <Title order={3} size="h4">{pet.name}</Title>
-                          </Box>
-                          {currentUser.role === 'manager' && (
-                            <ActionIcon
-                              variant="light"
-                              color="blue"
-                              onClick={() => {
-                                setEditingPet(pet);
-                                editPetForm.setValues({
-                                  name: pet.name,
-                                  notes: pet.notes || '',
-                                  training_level: pet.training_level,
-                                  is_fosterable: pet.is_fosterable,
-                                  age_category: pet.age_category || '',
-                                  size: pet.size || '',
-                                  gender: pet.gender || '',
-                                  good_with_kids: pet.good_with_kids || false,
-                                  good_with_dogs: pet.good_with_dogs || false,
-                                  good_with_cats: pet.good_with_cats || false,
-                                  photo_url: pet.photo_url || ''
-                                });
-                              }}
-                            >
-                              <IconEdit size={16} />
-                            </ActionIcon>
-                          )}
-                        </Group>
-
-                                                 <Group gap="xs">
-                           <Badge 
-                             color={getLevelColor(pet.training_level)} 
-                             variant="light"
-                             size="sm"
-                           >
-                             {pet.training_level} Level
-                           </Badge>
-                           {pet.is_fosterable && (
-                             <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
-                               Fosterable
-                             </Badge>
-                           )}
+                <Grid gutter="lg">
+                  {getFilteredDogs().map((pet) => (
+                                         <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
+                       <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                         <Card.Section pos="relative">
+                           <Image
+                             src={getPetImage(pet)}
+                             height={200}
+                             alt={pet.name}
+                             fallbackSrc="https://placehold.co/400x200?text=No+Photo"
+                           />
                            {getLongestResident('dog')?.pet_id === pet.pet_id && (
-                             <Badge color="red" variant="filled" size="sm">
+                             <Badge 
+                               color="red" 
+                               variant="filled" 
+                               size="sm"
+                               style={{
+                                 position: 'absolute',
+                                 top: 8,
+                                 right: 8,
+                                 zIndex: 10
+                               }}
+                             >
                                Longest Resident
                              </Badge>
                            )}
-                         </Group>
+                         </Card.Section>
 
-                         {/* Pet Details */}
-                         <Group gap="xs" wrap="wrap">
-                           {pet.age_category && (
-                             <Badge variant="outline" size="xs" color="blue">
-                               {pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
-                             </Badge>
-                           )}
-                           {pet.size && (
-                             <Badge variant="outline" size="xs" color="gray">
-                               {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
-                             </Badge>
-                           )}
-                           {pet.gender && (
-                             <Badge variant="outline" size="xs" color="pink">
-                               {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
-                             </Badge>
-                           )}
-                         </Group>
+                         <Stack gap="sm" mt="md" style={{ flex: 1 }}>
+                           <Group justify="space-between" align="flex-start">
+                             <Box style={{ flex: 1 }}>
+                               <Title order={3} size="h4">{pet.name}</Title>
+                             </Box>
+                             {currentUser.role === 'manager' && (
+                               <ActionIcon
+                                 variant="light"
+                                 color="blue"
+                                 onClick={() => {
+                                   setEditingPet(pet);
+                                   editPetForm.setValues({
+                                     name: pet.name,
+                                     notes: pet.notes || '',
+                                     training_level: pet.training_level,
+                                     is_fosterable: pet.is_fosterable,
+                                     age_category: pet.age_category || '',
+                                     size: pet.size || '',
+                                     gender: pet.gender || '',
+                                     good_with_kids: pet.good_with_kids || false,
+                                     good_with_dogs: pet.good_with_dogs || false,
+                                     good_with_cats: pet.good_with_cats || false,
+                                     photo_url: pet.photo_url || ''
+                                   });
+                                 }}
+                               >
+                                 <IconEdit size={16} />
+                               </ActionIcon>
+                             )}
+                           </Group>
 
-                         {/* Compatibility */}
-                         {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
-                           <Group gap="xs" wrap="wrap">
-                             <Text size="xs" c="dimmed">Good with:</Text>
-                             {pet.good_with_kids && (
-                               <Badge variant="dot" size="xs" color="green">
-                                 Kids
-                               </Badge>
-                             )}
-                             {pet.good_with_dogs && (
-                               <Badge variant="dot" size="xs" color="blue">
-                                 Dogs
-                               </Badge>
-                             )}
-                             {pet.good_with_cats && (
-                               <Badge variant="dot" size="xs" color="orange">
-                                 Cats
+                           <Group gap="xs">
+                             <Badge 
+                               color={getLevelColor(pet.training_level)} 
+                               variant="light"
+                               size="sm"
+                             >
+                               {pet.training_level} Level
+                             </Badge>
+                             {pet.is_fosterable && (
+                               <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
+                                 Fosterable
                                </Badge>
                              )}
                            </Group>
-                         )}
 
-                        {pet.notes && (
-                          <Text size="sm" lineClamp={2}>
-                            {pet.notes}
-                          </Text>
-                        )}
+                          {/* Pet Details */}
+                          <Group gap="xs" wrap="wrap">
+                            {pet.age_category && (
+                              <Badge variant="outline" size="xs" color="blue">
+                                {pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
+                              </Badge>
+                            )}
+                            {pet.size && (
+                              <Badge variant="outline" size="xs" color="gray">
+                                {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
+                              </Badge>
+                            )}
+                            {pet.gender && (
+                              <Badge variant="outline" size="xs" color="pink">
+                                {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
+                              </Badge>
+                            )}
+                          </Group>
 
-                        <Button
-                          variant="light"
-                          color="orange"
-                          fullWidth
-                          onClick={() => {
-                            setSelectedPet(pet);
-                            setShowPetModal(true);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </Stack>
-                    </Card>
-                  </GridCol>
-                ))}
-              </Grid>
-            </Tabs.Panel>
-
-            <Tabs.Panel value="cats">
-              {/* Cat Filters */}
-              <Card shadow="sm" padding="lg" radius="md" withBorder mb="lg">
-                <Group justify="space-between" align="center" mb="md">
-                  <Group>
-                    <IconFilter size={20} />
-                    <Title order={4}>Cat Filters</Title>
-                  </Group>
-                  <Group>
-                    <Button
-                      variant="light"
-                      size="sm"
-                      onClick={() => setShowCatFilters(!showCatFilters)}
-                    >
-                      {showCatFilters ? 'Hide Filters' : 'Show Filters'}
-                    </Button>
-                    <Button
-                      variant="light"
-                      color="red"
-                      size="sm"
-                      onClick={clearCatFilters}
-                    >
-                      Clear All
-                    </Button>
-                  </Group>
-                </Group>
-
-                {showCatFilters && (
-                  <Grid gutter="md">
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Age"
-                        placeholder="Select age"
-                        data={[
-                          { value: 'puppy', label: 'Kitten' },
-                          { value: 'adult', label: 'Adult' },
-                          { value: 'senior', label: 'Senior' }
-                        ]}
-                        value={catFilters.age}
-                        onChange={(value) => setCatFilters({ ...catFilters, age: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Size"
-                        placeholder="Select size"
-                        data={[
-                          { value: 'small', label: 'Small' },
-                          { value: 'medium', label: 'Medium' },
-                          { value: 'large', label: 'Large' }
-                        ]}
-                        value={catFilters.size}
-                        onChange={(value) => setCatFilters({ ...catFilters, size: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Select
-                        label="Gender"
-                        placeholder="Select gender"
-                        data={[
-                          { value: 'male', label: 'Male' },
-                          { value: 'female', label: 'Female' }
-                        ]}
-                        value={catFilters.gender}
-                        onChange={(value) => setCatFilters({ ...catFilters, gender: value || '' })}
-                        clearable
-                      />
-                    </GridCol>
-                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
-                      <Stack gap="xs">
-                        <Text size="sm" fw={500}>Good With:</Text>
-                        <Switch
-                          label="Kids"
-                          checked={catFilters.goodWithKids}
-                          onChange={(event) => setCatFilters({ ...catFilters, goodWithKids: event.currentTarget.checked })}
-                          size="sm"
-                        />
-                        <Switch
-                          label="Dogs"
-                          checked={catFilters.goodWithDogs}
-                          onChange={(event) => setCatFilters({ ...catFilters, goodWithDogs: event.currentTarget.checked })}
-                          size="sm"
-                        />
-                        <Switch
-                          label="Other Cats"
-                          checked={catFilters.goodWithCats}
-                          onChange={(event) => setCatFilters({ ...catFilters, goodWithCats: event.currentTarget.checked })}
-                          size="sm"
-                        />
-                      </Stack>
-                    </GridCol>
-                  </Grid>
-                )}
-              </Card>
-
-              <Grid gutter="lg">
-                {getFilteredCats().map((pet) => (
-                  <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
-                    <Card shadow="sm" padding="lg" radius="md" withBorder>
-                      <Card.Section>
-                        <Image
-                          src={getPetImage(pet)}
-                          height={200}
-                          alt={pet.name}
-                          fallbackSrc="https://placehold.co/400x200?text=No+Photo"
-                        />
-                      </Card.Section>
-
-                      <Stack gap="sm" mt="md">
-                        <Group justify="space-between" align="flex-start">
-                          <Box style={{ flex: 1 }}>
-                            <Title order={3} size="h4">{pet.name}</Title>
-                          </Box>
-                          {currentUser.role === 'manager' && (
-                            <ActionIcon
-                              variant="light"
-                              color="blue"
-                              onClick={() => {
-                                setEditingPet(pet);
-                                editPetForm.setValues({
-                                  name: pet.name,
-                                  notes: pet.notes || '',
-                                  training_level: pet.training_level,
-                                  is_fosterable: pet.is_fosterable,
-                                  age_category: pet.age_category || '',
-                                  size: pet.size || '',
-                                  gender: pet.gender || '',
-                                  good_with_kids: pet.good_with_kids || false,
-                                  good_with_dogs: pet.good_with_dogs || false,
-                                  good_with_cats: pet.good_with_cats || false,
-                                  photo_url: pet.photo_url || ''
-                                });
-                              }}
-                            >
-                              <IconEdit size={16} />
-                            </ActionIcon>
+                          {/* Compatibility */}
+                          {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
+                            <Group gap="xs" wrap="wrap">
+                              <Text size="xs" c="dimmed">Good with:</Text>
+                              {pet.good_with_kids && (
+                                <Badge variant="dot" size="xs" color="green">
+                                  Kids
+                                </Badge>
+                              )}
+                              {pet.good_with_dogs && (
+                                <Badge variant="dot" size="xs" color="blue">
+                                  Dogs
+                                </Badge>
+                              )}
+                              {pet.good_with_cats && (
+                                <Badge variant="dot" size="xs" color="orange">
+                                  Cats
+                                </Badge>
+                              )}
+                            </Group>
                           )}
-                        </Group>
 
-                                                 <Group gap="xs">
-                           <Badge 
-                             color={getLevelColor(pet.training_level)} 
-                             variant="light"
-                             size="sm"
-                           >
-                             {pet.training_level} Level
-                           </Badge>
-                           {pet.is_fosterable && (
-                             <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
-                               Fosterable
-                             </Badge>
-                           )}
+                          {pet.notes && (
+                            <Text size="sm" lineClamp={2}>
+                              {pet.notes}
+                            </Text>
+                          )}
+
+                          <Button
+                            variant="light"
+                            color="orange"
+                            fullWidth
+                            style={{ marginTop: 'auto' }}
+                            onClick={() => {
+                              setSelectedPet(pet);
+                              setShowPetModal(true);
+                            }}
+                          >
+                            View Details
+                          </Button>
+                        </Stack>
+                      </Card>
+                    </GridCol>
+                  ))}
+                </Grid>
+
+                {/* Empty State for Dogs */}
+                {getFilteredDogs().length === 0 && (
+                  <Card shadow="sm" padding="md" radius="md" withBorder>
+                    <Box ta="center">
+                      <IconHome size={32} color={theme.colors.gray[4]} />
+                      <Text fw={600} size="sm" mt="sm" c="dimmed">No dogs available</Text>
+                      <Text size="xs" c="dimmed">
+                        {showFosterableOnly 
+                          ? 'No fosterable dogs available at the moment.' 
+                          : 'No dogs available at the moment.'
+                        }
+                      </Text>
+                    </Box>
+                  </Card>
+                )}
+              </Tabs.Panel>
+
+              <Tabs.Panel value="cats">
+                                 {/* Cat Filters */}
+                 <Card shadow="sm" padding="md" radius="md" withBorder mb="md">
+                   <Group justify="space-between" align="center" mb="sm">
+                     <Group gap="xs">
+                       <IconFilter size={16} />
+                       <Text fw={600} size="sm">Cat Filters</Text>
+                     </Group>
+                     <Group>
+                       <Switch
+                         label="Show fosterable only"
+                         checked={showFosterableOnly}
+                         onChange={(event) => setShowFosterableOnly(event.currentTarget.checked)}
+                         color="orange"
+                         size="sm"
+                       />
+                       <Button
+                         variant="light"
+                         size="xs"
+                         onClick={() => setShowCatFilters(!showCatFilters)}
+                       >
+                         {showCatFilters ? 'Hide' : 'Show'}
+                       </Button>
+                       <Button
+                         variant="light"
+                         color="red"
+                         size="xs"
+                         onClick={clearCatFilters}
+                       >
+                         Clear
+                       </Button>
+                     </Group>
+                   </Group>
+
+                  {showCatFilters && (
+                    <Grid gutter="md">
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Age"
+                          placeholder="Select age"
+                          data={[
+                            { value: 'puppy', label: 'Kitten' },
+                            { value: 'adult', label: 'Adult' },
+                            { value: 'senior', label: 'Senior' }
+                          ]}
+                          value={catFilters.age}
+                          onChange={(value) => setCatFilters({ ...catFilters, age: value || '' })}
+                          clearable
+                        />
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Size"
+                          placeholder="Select size"
+                          data={[
+                            { value: 'small', label: 'Small' },
+                            { value: 'medium', label: 'Medium' },
+                            { value: 'large', label: 'Large' }
+                          ]}
+                          value={catFilters.size}
+                          onChange={(value) => setCatFilters({ ...catFilters, size: value || '' })}
+                          clearable
+                        />
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Select
+                          label="Gender"
+                          placeholder="Select gender"
+                          data={[
+                            { value: 'male', label: 'Male' },
+                            { value: 'female', label: 'Female' }
+                          ]}
+                          value={catFilters.gender}
+                          onChange={(value) => setCatFilters({ ...catFilters, gender: value || '' })}
+                          clearable
+                        />
+                      </GridCol>
+                      <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                        <Stack gap="xs">
+                          <Text size="sm" fw={500}>Good With:</Text>
+                          <Switch
+                            label="Kids"
+                            checked={catFilters.goodWithKids}
+                            onChange={(event) => setCatFilters({ ...catFilters, goodWithKids: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                          <Switch
+                            label="Dogs"
+                            checked={catFilters.goodWithDogs}
+                            onChange={(event) => setCatFilters({ ...catFilters, goodWithDogs: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                          <Switch
+                            label="Other Cats"
+                            checked={catFilters.goodWithCats}
+                            onChange={(event) => setCatFilters({ ...catFilters, goodWithCats: event.currentTarget.checked })}
+                            size="sm"
+                          />
+                        </Stack>
+                      </GridCol>
+                    </Grid>
+                  )}
+                </Card>
+
+                <Grid gutter="lg">
+                  {getFilteredCats().map((pet) => (
+                                         <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
+                       <Card shadow="sm" padding="lg" radius="md" withBorder style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+                         <Card.Section pos="relative">
+                           <Image
+                             src={getPetImage(pet)}
+                             height={200}
+                             alt={pet.name}
+                             fallbackSrc="https://placehold.co/400x200?text=No+Photo"
+                           />
                            {getLongestResident('cat')?.pet_id === pet.pet_id && (
-                             <Badge color="red" variant="filled" size="sm">
+                             <Badge 
+                               color="red" 
+                               variant="filled" 
+                               size="sm"
+                               style={{
+                                 position: 'absolute',
+                                 top: 8,
+                                 right: 8,
+                                 zIndex: 10
+                               }}
+                             >
                                Longest Resident
                              </Badge>
                            )}
-                         </Group>
+                         </Card.Section>
 
-                         {/* Pet Details */}
-                         <Group gap="xs" wrap="wrap">
-                           {pet.age_category && (
-                             <Badge variant="outline" size="xs" color="blue">
-                               {pet.age_category === 'puppy' ? 'Kitten' : pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
-                             </Badge>
-                           )}
-                           {pet.size && (
-                             <Badge variant="outline" size="xs" color="gray">
-                               {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
-                             </Badge>
-                           )}
-                           {pet.gender && (
-                             <Badge variant="outline" size="xs" color="pink">
-                               {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
-                             </Badge>
-                           )}
-                         </Group>
+                         <Stack gap="sm" mt="md" style={{ flex: 1 }}>
+                           <Group justify="space-between" align="flex-start">
+                             <Box style={{ flex: 1 }}>
+                               <Title order={3} size="h4">{pet.name}</Title>
+                             </Box>
+                             {currentUser.role === 'manager' && (
+                               <ActionIcon
+                                 variant="light"
+                                 color="blue"
+                                 onClick={() => {
+                                   setEditingPet(pet);
+                                   editPetForm.setValues({
+                                     name: pet.name,
+                                     notes: pet.notes || '',
+                                     training_level: pet.training_level,
+                                     is_fosterable: pet.is_fosterable,
+                                     age_category: pet.age_category || '',
+                                     size: pet.size || '',
+                                     gender: pet.gender || '',
+                                     good_with_kids: pet.good_with_kids || false,
+                                     good_with_dogs: pet.good_with_dogs || false,
+                                     good_with_cats: pet.good_with_cats || false,
+                                     photo_url: pet.photo_url || ''
+                                   });
+                                 }}
+                               >
+                                 <IconEdit size={16} />
+                               </ActionIcon>
+                             )}
+                           </Group>
 
-                         {/* Compatibility */}
-                         {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
-                           <Group gap="xs" wrap="wrap">
-                             <Text size="xs" c="dimmed">Good with:</Text>
-                             {pet.good_with_kids && (
-                               <Badge variant="dot" size="xs" color="green">
-                                 Kids
-                               </Badge>
-                             )}
-                             {pet.good_with_dogs && (
-                               <Badge variant="dot" size="xs" color="blue">
-                                 Dogs
-                               </Badge>
-                             )}
-                             {pet.good_with_cats && (
-                               <Badge variant="dot" size="xs" color="orange">
-                                 Cats
+                           <Group gap="xs">
+                             <Badge 
+                               color={getLevelColor(pet.training_level)} 
+                               variant="light"
+                               size="sm"
+                             >
+                               {pet.training_level} Level
+                             </Badge>
+                             {pet.is_fosterable && (
+                               <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
+                                 Fosterable
                                </Badge>
                              )}
                            </Group>
-                         )}
 
-                        {pet.notes && (
-                          <Text size="sm" lineClamp={2}>
-                            {pet.notes}
-                          </Text>
-                        )}
+                          {/* Pet Details */}
+                          <Group gap="xs" wrap="wrap">
+                            {pet.age_category && (
+                              <Badge variant="outline" size="xs" color="blue">
+                                {pet.age_category === 'puppy' ? 'Kitten' : pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
+                              </Badge>
+                            )}
+                            {pet.size && (
+                              <Badge variant="outline" size="xs" color="gray">
+                                {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
+                              </Badge>
+                            )}
+                            {pet.gender && (
+                              <Badge variant="outline" size="xs" color="pink">
+                                {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
+                              </Badge>
+                            )}
+                          </Group>
 
-                        <Button
-                          variant="light"
-                          color="orange"
-                          fullWidth
-                          onClick={() => {
-                            setSelectedPet(pet);
-                            setShowPetModal(true);
-                          }}
-                        >
-                          View Details
-                        </Button>
-                      </Stack>
-                    </Card>
-                  </GridCol>
-                ))}
-              </Grid>
-            </Tabs.Panel>
-          </Tabs>
+                          {/* Compatibility */}
+                          {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
+                            <Group gap="xs" wrap="wrap">
+                              <Text size="xs" c="dimmed">Good with:</Text>
+                              {pet.good_with_kids && (
+                                <Badge variant="dot" size="xs" color="green">
+                                  Kids
+                                </Badge>
+                              )}
+                              {pet.good_with_dogs && (
+                                <Badge variant="dot" size="xs" color="blue">
+                                  Dogs
+                                </Badge>
+                              )}
+                              {pet.good_with_cats && (
+                                <Badge variant="dot" size="xs" color="orange">
+                                  Cats
+                                </Badge>
+                              )}
+                            </Group>
+                          )}
 
-          {/* Empty State */}
-          {pets.length === 0 && (
-            <Card shadow="sm" padding="xl" radius="md" withBorder>
-              <Box ta="center">
-                <IconHome size={64} color={theme.colors.gray[4]} />
-                <Title order={3} mt="md" c="dimmed">No pets available</Title>
-                <Text c="dimmed" size="sm">
-                  {showFosterableOnly 
-                    ? `No fosterable ${activeTab} available at the moment.` 
-                    : `No ${activeTab} available at the moment.`
-                  }
-                </Text>
-              </Box>
-            </Card>
-          )}
-        </Stack>
+                          {pet.notes && (
+                            <Text size="sm" lineClamp={2}>
+                              {pet.notes}
+                            </Text>
+                          )}
+
+                          <Button
+                            variant="light"
+                            color="orange"
+                            fullWidth
+                            style={{ marginTop: 'auto' }}
+                            onClick={() => {
+                              setSelectedPet(pet);
+                              setShowPetModal(true);
+                            }}
+                          >
+                            View Details
+                          </Button>
+                        </Stack>
+                      </Card>
+                    </GridCol>
+                  ))}
+                </Grid>
+
+                {/* Empty State for Cats */}
+                {getFilteredCats().length === 0 && (
+                  <Card shadow="sm" padding="md" radius="md" withBorder>
+                    <Box ta="center">
+                      <IconHome size={32} color={theme.colors.gray[4]} />
+                      <Text fw={600} size="sm" mt="sm" c="dimmed">No cats available</Text>
+                      <Text size="xs" c="dimmed">
+                        {showFosterableOnly 
+                          ? 'No fosterable cats available at the moment.' 
+                          : 'No cats available at the moment.'
+                        }
+                      </Text>
+                    </Box>
+                  </Card>
+                )}
+              </Tabs.Panel>
+            </Tabs>
+          </GridCol>
+        </Grid>
 
         {/* Pet Details Modal */}
         <Modal 
