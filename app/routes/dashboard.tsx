@@ -229,7 +229,8 @@ export default function Dashboard() {
         dog_id: values.dog_id,
         walk_date: values.walk_date,
         time_start: values.start_time,
-        duration: values.duration
+        duration: values.duration,
+        notes: values.notes
       });
       setDogWalks([newWalk, ...dogWalks]);
       walkForm.reset();
@@ -573,10 +574,10 @@ export default function Dashboard() {
                                 </Avatar>
                                 <Box>
                                   <Text fw={500} size="sm">
-                                    {dogs.find(d => d.pet_id === walk.pet_id)?.name || 'Unknown Dog'}
+                                    {walk.pets?.name || 'Unknown Dog'}
                                   </Text>
                                   <Text size="xs" c="dimmed">
-                                    {new Date(walk.walk_date).toLocaleDateString()} at {walk.start_time}
+                                    {new Date(walk.walk_date).toLocaleDateString()} at {walk.time_start}
                                   </Text>
                                 </Box>
                               </Group>

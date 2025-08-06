@@ -114,11 +114,16 @@ export async function createDogWalk(walk: {
   walk_date: string;
   time_start: string;
   duration: string;
+  notes?: string;
 }) {
   const { data, error } = await supabase
     .from('dog_walks')
     .insert([walk])
-    .select()
+    .select(`
+      *,
+      pets (name, training_level),
+      users (name)
+    `)
     .single();
   if (error) throw error;
   return data;

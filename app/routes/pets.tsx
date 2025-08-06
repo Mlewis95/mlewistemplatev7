@@ -9,28 +9,50 @@ import {
 } from '@mantine/core';
 import {
   IconDog, IconCat, IconHeart, IconEdit, IconPhoto,
-  IconAlertCircle, IconHome, IconUser, IconStar
+  IconAlertCircle, IconHome, IconUser, IconStar, IconFilter
 } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { notifications } from '@mantine/notifications';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: "Adoptable Pets - Kenton County Animal Shelter" },
-    { name: "description", content: "Browse adoptable dogs and cats at Kenton County Animal Shelter." },
+    { title: "Pets - Kenton County Animal Shelter" },
+    { name: "description", content: "Browse dogs and cats at Kenton County Animal Shelter." },
   ];
 }
 
 export default function Pets() {
   const theme = useMantineTheme();
   const [activeTab, setActiveTab] = useState<string | null>('dogs');
-  const [showFosterableOnly, setShowFosterableOnly] = useState(true);
+  const [showFosterableOnly, setShowFosterableOnly] = useState(false);
   const [pets, setPets] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedPet, setSelectedPet] = useState<any>(null);
   const [showPetModal, setShowPetModal] = useState(false);
   const [editingPet, setEditingPet] = useState<any>(null);
+  
+  // Dog filters
+  const [dogFilters, setDogFilters] = useState({
+    age: '',
+    size: '',
+    gender: '',
+    goodWithKids: false,
+    goodWithDogs: false,
+    goodWithCats: false
+  });
+  const [showDogFilters, setShowDogFilters] = useState(false);
+
+  // Cat filters
+  const [catFilters, setCatFilters] = useState({
+    age: '',
+    size: '',
+    gender: '',
+    goodWithKids: false,
+    goodWithDogs: false,
+    goodWithCats: false
+  });
+  const [showCatFilters, setShowCatFilters] = useState(false);
 
   // Mock current user (in real app, this would come from auth)
   const currentUser = {
@@ -45,7 +67,14 @@ export default function Pets() {
       name: '',
       notes: '',
       training_level: '',
-      is_fosterable: false
+      is_fosterable: false,
+      age_category: '',
+      size: '',
+      gender: '',
+      good_with_kids: false,
+      good_with_dogs: false,
+      good_with_cats: false,
+      photo_url: ''
     },
     validate: {
       name: (value) => value.trim().length === 0 ? 'Name is required' : null,
@@ -55,20 +84,33 @@ export default function Pets() {
 
   useEffect(() => {
     loadPets();
-  }, [activeTab, showFosterableOnly]);
+  }, [showFosterableOnly]);
 
   async function loadPets() {
     try {
       setLoading(true);
-      const species = activeTab === 'cats' ? 'cat' : 'dog';
-      let petsData = await getPets(species);
+      // Load all pets (both dogs and cats)
+      const [dogsData, catsData] = await Promise.all([
+        getPets('dog'),
+        getPets('cat')
+      ]);
+      
+      // Combine all pets
+      let allPets = [...dogsData, ...catsData];
       
       // Filter by fosterable status if toggle is on
       if (showFosterableOnly) {
-        petsData = petsData.filter(pet => pet.is_fosterable);
+        allPets = allPets.filter(pet => pet.is_fosterable);
       }
       
-      setPets(petsData);
+      // Sort by length of stay (longest to shortest)
+      allPets.sort((a, b) => {
+        const dateA = new Date(a.entry_date);
+        const dateB = new Date(b.entry_date);
+        return dateA.getTime() - dateB.getTime(); // Oldest first (longest resident)
+      });
+      
+      setPets(allPets);
     } catch (err) {
       console.error('Error loading pets:', err);
       setError(err instanceof Error ? err.message : 'Failed to load pets');
@@ -83,8 +125,15 @@ export default function Pets() {
         name: values.name,
         notes: values.notes,
         training_level: values.training_level,
-        is_fosterable: values.is_fosterable
-      });
+        is_fosterable: values.is_fosterable,
+        age_category: values.age_category,
+        size: values.size,
+        gender: values.gender,
+        good_with_kids: values.good_with_kids,
+        good_with_dogs: values.good_with_dogs,
+        good_with_cats: values.good_with_cats,
+        photo_url: values.photo_url
+      } as any);
       setPets(pets.map(pet => pet.pet_id === editingPet.pet_id ? updatedPet : pet));
       setEditingPet(null);
       editPetForm.reset();
@@ -130,6 +179,101 @@ export default function Pets() {
     return pet.photo_url || `https://source.unsplash.com/400x300/?${pet.species},${pet.name}`;
   };
 
+  // Helper function to calculate days in shelter
+  const getDaysInShelter = (entryDate: string) => {
+    const entry = new Date(entryDate);
+    const today = new Date();
+    const diffTime = Math.abs(today.getTime() - entry.getTime());
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return diffDays;
+  };
+
+  // Get the longest resident for each species
+  const getLongestResident = (species: string) => {
+    const speciesPets = pets.filter(pet => pet.species === species);
+    if (speciesPets.length === 0) return null;
+    
+    return speciesPets.reduce((longest, current) => {
+      const longestDays = getDaysInShelter(longest.entry_date);
+      const currentDays = getDaysInShelter(current.entry_date);
+      return currentDays > longestDays ? current : longest;
+    });
+  };
+
+  // Filter dogs based on selected criteria
+  const getFilteredDogs = () => {
+    return pets.filter(pet => pet.species === 'dog').filter(dog => {
+      // Age filter
+      if (dogFilters.age && dog.age_category !== dogFilters.age) return false;
+      
+      // Size filter
+      if (dogFilters.size && dog.size !== dogFilters.size) return false;
+      
+      // Gender filter
+      if (dogFilters.gender && dog.gender !== dogFilters.gender) return false;
+      
+      // Good with kids filter
+      if (dogFilters.goodWithKids && !dog.good_with_kids) return false;
+      
+      // Good with dogs filter
+      if (dogFilters.goodWithDogs && !dog.good_with_dogs) return false;
+      
+      // Good with cats filter
+      if (dogFilters.goodWithCats && !dog.good_with_cats) return false;
+      
+      return true;
+    });
+  };
+
+  // Clear all dog filters
+  const clearDogFilters = () => {
+    setDogFilters({
+      age: '',
+      size: '',
+      gender: '',
+      goodWithKids: false,
+      goodWithDogs: false,
+      goodWithCats: false
+    });
+  };
+
+  // Filter cats based on selected criteria
+  const getFilteredCats = () => {
+    return pets.filter(pet => pet.species === 'cat').filter(cat => {
+      // Age filter
+      if (catFilters.age && cat.age_category !== catFilters.age) return false;
+      
+      // Size filter
+      if (catFilters.size && cat.size !== catFilters.size) return false;
+      
+      // Gender filter
+      if (catFilters.gender && cat.gender !== catFilters.gender) return false;
+      
+      // Good with kids filter
+      if (catFilters.goodWithKids && !cat.good_with_kids) return false;
+      
+      // Good with dogs filter
+      if (catFilters.goodWithDogs && !cat.good_with_dogs) return false;
+      
+      // Good with cats filter
+      if (catFilters.goodWithCats && !cat.good_with_cats) return false;
+      
+      return true;
+    });
+  };
+
+  // Clear all cat filters
+  const clearCatFilters = () => {
+    setCatFilters({
+      age: '',
+      size: '',
+      gender: '',
+      goodWithKids: false,
+      goodWithDogs: false,
+      goodWithCats: false
+    });
+  };
+
   if (loading) {
     return (
       <Container size="xl" py="xl">
@@ -156,7 +300,7 @@ export default function Pets() {
           <Card shadow="sm" padding="lg" radius="md" withBorder>
             <Group justify="space-between" align="center">
               <Box>
-                <Title order={1} c="dark.8">Adoptable Pets</Title>
+                <Title order={1} c="dark.8">Pets</Title>
                 <Text c="dimmed" size="sm">Find your perfect companion</Text>
               </Box>
               <Group>
@@ -190,8 +334,104 @@ export default function Pets() {
             </Tabs.List>
 
             <Tabs.Panel value="dogs">
+              {/* Dog Filters */}
+              <Card shadow="sm" padding="lg" radius="md" withBorder mb="lg">
+                <Group justify="space-between" align="center" mb="md">
+                  <Group>
+                    <IconFilter size={20} />
+                    <Title order={4}>Dog Filters</Title>
+                  </Group>
+                  <Group>
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => setShowDogFilters(!showDogFilters)}
+                    >
+                      {showDogFilters ? 'Hide Filters' : 'Show Filters'}
+                    </Button>
+                    <Button
+                      variant="light"
+                      color="red"
+                      size="sm"
+                      onClick={clearDogFilters}
+                    >
+                      Clear All
+                    </Button>
+                  </Group>
+                </Group>
+
+                {showDogFilters && (
+                  <Grid gutter="md">
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Age"
+                        placeholder="Select age"
+                        data={[
+                          { value: 'puppy', label: 'Puppy' },
+                          { value: 'adult', label: 'Adult' },
+                          { value: 'senior', label: 'Senior' }
+                        ]}
+                        value={dogFilters.age}
+                        onChange={(value) => setDogFilters({ ...dogFilters, age: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Size"
+                        placeholder="Select size"
+                        data={[
+                          { value: 'small', label: 'Small' },
+                          { value: 'medium', label: 'Medium' },
+                          { value: 'large', label: 'Large' }
+                        ]}
+                        value={dogFilters.size}
+                        onChange={(value) => setDogFilters({ ...dogFilters, size: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Gender"
+                        placeholder="Select gender"
+                        data={[
+                          { value: 'male', label: 'Male' },
+                          { value: 'female', label: 'Female' }
+                        ]}
+                        value={dogFilters.gender}
+                        onChange={(value) => setDogFilters({ ...dogFilters, gender: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Stack gap="xs">
+                        <Text size="sm" fw={500}>Good With:</Text>
+                        <Switch
+                          label="Kids"
+                          checked={dogFilters.goodWithKids}
+                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithKids: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                        <Switch
+                          label="Other Dogs"
+                          checked={dogFilters.goodWithDogs}
+                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithDogs: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                        <Switch
+                          label="Cats"
+                          checked={dogFilters.goodWithCats}
+                          onChange={(event) => setDogFilters({ ...dogFilters, goodWithCats: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                      </Stack>
+                    </GridCol>
+                  </Grid>
+                )}
+              </Card>
+
               <Grid gutter="lg">
-                {pets.filter(pet => pet.species === 'dog').map((pet) => (
+                {getFilteredDogs().map((pet) => (
                   <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
                     <Card shadow="sm" padding="lg" radius="md" withBorder>
                       <Card.Section>
@@ -207,7 +447,6 @@ export default function Pets() {
                         <Group justify="space-between" align="flex-start">
                           <Box style={{ flex: 1 }}>
                             <Title order={3} size="h4">{pet.name}</Title>
-                            <Text size="sm" c="dimmed">ID: {pet.pet_id.slice(0, 8)}...</Text>
                           </Box>
                           {currentUser.role === 'manager' && (
                             <ActionIcon
@@ -219,7 +458,14 @@ export default function Pets() {
                                   name: pet.name,
                                   notes: pet.notes || '',
                                   training_level: pet.training_level,
-                                  is_fosterable: pet.is_fosterable
+                                  is_fosterable: pet.is_fosterable,
+                                  age_category: pet.age_category || '',
+                                  size: pet.size || '',
+                                  gender: pet.gender || '',
+                                  good_with_kids: pet.good_with_kids || false,
+                                  good_with_dogs: pet.good_with_dogs || false,
+                                  good_with_cats: pet.good_with_cats || false,
+                                  photo_url: pet.photo_url || ''
                                 });
                               }}
                             >
@@ -228,20 +474,66 @@ export default function Pets() {
                           )}
                         </Group>
 
-                        <Group gap="xs">
-                          <Badge 
-                            color={getLevelColor(pet.training_level)} 
-                            variant="light"
-                            size="sm"
-                          >
-                            {pet.training_level} Level
-                          </Badge>
-                          {pet.is_fosterable && (
-                            <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
-                              Fosterable
-                            </Badge>
-                          )}
-                        </Group>
+                                                 <Group gap="xs">
+                           <Badge 
+                             color={getLevelColor(pet.training_level)} 
+                             variant="light"
+                             size="sm"
+                           >
+                             {pet.training_level} Level
+                           </Badge>
+                           {pet.is_fosterable && (
+                             <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
+                               Fosterable
+                             </Badge>
+                           )}
+                           {getLongestResident('dog')?.pet_id === pet.pet_id && (
+                             <Badge color="red" variant="filled" size="sm">
+                               Longest Resident
+                             </Badge>
+                           )}
+                         </Group>
+
+                         {/* Pet Details */}
+                         <Group gap="xs" wrap="wrap">
+                           {pet.age_category && (
+                             <Badge variant="outline" size="xs" color="blue">
+                               {pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
+                             </Badge>
+                           )}
+                           {pet.size && (
+                             <Badge variant="outline" size="xs" color="gray">
+                               {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
+                             </Badge>
+                           )}
+                           {pet.gender && (
+                             <Badge variant="outline" size="xs" color="pink">
+                               {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
+                             </Badge>
+                           )}
+                         </Group>
+
+                         {/* Compatibility */}
+                         {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
+                           <Group gap="xs" wrap="wrap">
+                             <Text size="xs" c="dimmed">Good with:</Text>
+                             {pet.good_with_kids && (
+                               <Badge variant="dot" size="xs" color="green">
+                                 Kids
+                               </Badge>
+                             )}
+                             {pet.good_with_dogs && (
+                               <Badge variant="dot" size="xs" color="blue">
+                                 Dogs
+                               </Badge>
+                             )}
+                             {pet.good_with_cats && (
+                               <Badge variant="dot" size="xs" color="orange">
+                                 Cats
+                               </Badge>
+                             )}
+                           </Group>
+                         )}
 
                         {pet.notes && (
                           <Text size="sm" lineClamp={2}>
@@ -268,8 +560,104 @@ export default function Pets() {
             </Tabs.Panel>
 
             <Tabs.Panel value="cats">
+              {/* Cat Filters */}
+              <Card shadow="sm" padding="lg" radius="md" withBorder mb="lg">
+                <Group justify="space-between" align="center" mb="md">
+                  <Group>
+                    <IconFilter size={20} />
+                    <Title order={4}>Cat Filters</Title>
+                  </Group>
+                  <Group>
+                    <Button
+                      variant="light"
+                      size="sm"
+                      onClick={() => setShowCatFilters(!showCatFilters)}
+                    >
+                      {showCatFilters ? 'Hide Filters' : 'Show Filters'}
+                    </Button>
+                    <Button
+                      variant="light"
+                      color="red"
+                      size="sm"
+                      onClick={clearCatFilters}
+                    >
+                      Clear All
+                    </Button>
+                  </Group>
+                </Group>
+
+                {showCatFilters && (
+                  <Grid gutter="md">
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Age"
+                        placeholder="Select age"
+                        data={[
+                          { value: 'puppy', label: 'Kitten' },
+                          { value: 'adult', label: 'Adult' },
+                          { value: 'senior', label: 'Senior' }
+                        ]}
+                        value={catFilters.age}
+                        onChange={(value) => setCatFilters({ ...catFilters, age: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Size"
+                        placeholder="Select size"
+                        data={[
+                          { value: 'small', label: 'Small' },
+                          { value: 'medium', label: 'Medium' },
+                          { value: 'large', label: 'Large' }
+                        ]}
+                        value={catFilters.size}
+                        onChange={(value) => setCatFilters({ ...catFilters, size: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Select
+                        label="Gender"
+                        placeholder="Select gender"
+                        data={[
+                          { value: 'male', label: 'Male' },
+                          { value: 'female', label: 'Female' }
+                        ]}
+                        value={catFilters.gender}
+                        onChange={(value) => setCatFilters({ ...catFilters, gender: value || '' })}
+                        clearable
+                      />
+                    </GridCol>
+                    <GridCol span={{ base: 12, sm: 6, md: 3 }}>
+                      <Stack gap="xs">
+                        <Text size="sm" fw={500}>Good With:</Text>
+                        <Switch
+                          label="Kids"
+                          checked={catFilters.goodWithKids}
+                          onChange={(event) => setCatFilters({ ...catFilters, goodWithKids: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                        <Switch
+                          label="Dogs"
+                          checked={catFilters.goodWithDogs}
+                          onChange={(event) => setCatFilters({ ...catFilters, goodWithDogs: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                        <Switch
+                          label="Other Cats"
+                          checked={catFilters.goodWithCats}
+                          onChange={(event) => setCatFilters({ ...catFilters, goodWithCats: event.currentTarget.checked })}
+                          size="sm"
+                        />
+                      </Stack>
+                    </GridCol>
+                  </Grid>
+                )}
+              </Card>
+
               <Grid gutter="lg">
-                {pets.filter(pet => pet.species === 'cat').map((pet) => (
+                {getFilteredCats().map((pet) => (
                   <GridCol key={pet.pet_id} span={{ base: 12, sm: 6, lg: 4 }}>
                     <Card shadow="sm" padding="lg" radius="md" withBorder>
                       <Card.Section>
@@ -285,7 +673,6 @@ export default function Pets() {
                         <Group justify="space-between" align="flex-start">
                           <Box style={{ flex: 1 }}>
                             <Title order={3} size="h4">{pet.name}</Title>
-                            <Text size="sm" c="dimmed">ID: {pet.pet_id.slice(0, 8)}...</Text>
                           </Box>
                           {currentUser.role === 'manager' && (
                             <ActionIcon
@@ -297,7 +684,14 @@ export default function Pets() {
                                   name: pet.name,
                                   notes: pet.notes || '',
                                   training_level: pet.training_level,
-                                  is_fosterable: pet.is_fosterable
+                                  is_fosterable: pet.is_fosterable,
+                                  age_category: pet.age_category || '',
+                                  size: pet.size || '',
+                                  gender: pet.gender || '',
+                                  good_with_kids: pet.good_with_kids || false,
+                                  good_with_dogs: pet.good_with_dogs || false,
+                                  good_with_cats: pet.good_with_cats || false,
+                                  photo_url: pet.photo_url || ''
                                 });
                               }}
                             >
@@ -306,20 +700,66 @@ export default function Pets() {
                           )}
                         </Group>
 
-                        <Group gap="xs">
-                          <Badge 
-                            color={getLevelColor(pet.training_level)} 
-                            variant="light"
-                            size="sm"
-                          >
-                            {pet.training_level} Level
-                          </Badge>
-                          {pet.is_fosterable && (
-                            <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
-                              Fosterable
-                            </Badge>
-                          )}
-                        </Group>
+                                                 <Group gap="xs">
+                           <Badge 
+                             color={getLevelColor(pet.training_level)} 
+                             variant="light"
+                             size="sm"
+                           >
+                             {pet.training_level} Level
+                           </Badge>
+                           {pet.is_fosterable && (
+                             <Badge color="green" variant="light" size="sm" leftSection={<IconHeart size={12} />}>
+                               Fosterable
+                             </Badge>
+                           )}
+                           {getLongestResident('cat')?.pet_id === pet.pet_id && (
+                             <Badge color="red" variant="filled" size="sm">
+                               Longest Resident
+                             </Badge>
+                           )}
+                         </Group>
+
+                         {/* Pet Details */}
+                         <Group gap="xs" wrap="wrap">
+                           {pet.age_category && (
+                             <Badge variant="outline" size="xs" color="blue">
+                               {pet.age_category === 'puppy' ? 'Kitten' : pet.age_category.charAt(0).toUpperCase() + pet.age_category.slice(1)}
+                             </Badge>
+                           )}
+                           {pet.size && (
+                             <Badge variant="outline" size="xs" color="gray">
+                               {pet.size.charAt(0).toUpperCase() + pet.size.slice(1)}
+                             </Badge>
+                           )}
+                           {pet.gender && (
+                             <Badge variant="outline" size="xs" color="pink">
+                               {pet.gender.charAt(0).toUpperCase() + pet.gender.slice(1)}
+                             </Badge>
+                           )}
+                         </Group>
+
+                         {/* Compatibility */}
+                         {(pet.good_with_kids || pet.good_with_dogs || pet.good_with_cats) && (
+                           <Group gap="xs" wrap="wrap">
+                             <Text size="xs" c="dimmed">Good with:</Text>
+                             {pet.good_with_kids && (
+                               <Badge variant="dot" size="xs" color="green">
+                                 Kids
+                               </Badge>
+                             )}
+                             {pet.good_with_dogs && (
+                               <Badge variant="dot" size="xs" color="blue">
+                                 Dogs
+                               </Badge>
+                             )}
+                             {pet.good_with_cats && (
+                               <Badge variant="dot" size="xs" color="orange">
+                                 Cats
+                               </Badge>
+                             )}
+                           </Group>
+                         )}
 
                         {pet.notes && (
                           <Text size="sm" lineClamp={2}>
@@ -426,7 +866,14 @@ export default function Pets() {
                           name: selectedPet.name,
                           notes: selectedPet.notes || '',
                           training_level: selectedPet.training_level,
-                          is_fosterable: selectedPet.is_fosterable
+                          is_fosterable: selectedPet.is_fosterable,
+                          age_category: selectedPet.age_category || '',
+                          size: selectedPet.size || '',
+                          gender: selectedPet.gender || '',
+                          good_with_kids: selectedPet.good_with_kids || false,
+                          good_with_dogs: selectedPet.good_with_dogs || false,
+                          good_with_cats: selectedPet.good_with_cats || false,
+                          photo_url: selectedPet.photo_url || ''
                         });
                       }}
                     >
@@ -480,6 +927,86 @@ export default function Pets() {
                 {...editPetForm.getInputProps('is_fosterable', { type: 'checkbox' })}
                 color="green"
               />
+
+              <Divider label="Pet Image" labelPosition="center" />
+
+              <TextInput
+                label="Image URL"
+                placeholder="Enter image URL (e.g., https://example.com/pet-photo.jpg)"
+                {...editPetForm.getInputProps('photo_url')}
+                description="Provide a direct link to the pet's photo"
+              />
+
+              {editPetForm.values.photo_url && (
+                <Box>
+                  <Text size="sm" fw={500} mb="xs">Preview:</Text>
+                  <Image
+                    src={editPetForm.values.photo_url}
+                    height={150}
+                    alt="Pet preview"
+                    fallbackSrc="https://placehold.co/400x200?text=Invalid+Image+URL"
+                    radius="md"
+                  />
+                </Box>
+              )}
+
+              <Divider label="Additional Details" labelPosition="center" />
+
+              <Select
+                label="Age Category"
+                placeholder="Select age category"
+                data={[
+                  { value: 'puppy', label: 'Puppy/Kitten' },
+                  { value: 'adult', label: 'Adult' },
+                  { value: 'senior', label: 'Senior' }
+                ]}
+                {...editPetForm.getInputProps('age_category')}
+                clearable
+              />
+
+              <Select
+                label="Size"
+                placeholder="Select size"
+                data={[
+                  { value: 'small', label: 'Small' },
+                  { value: 'medium', label: 'Medium' },
+                  { value: 'large', label: 'Large' }
+                ]}
+                {...editPetForm.getInputProps('size')}
+                clearable
+              />
+
+              <Select
+                label="Gender"
+                placeholder="Select gender"
+                data={[
+                  { value: 'male', label: 'Male' },
+                  { value: 'female', label: 'Female' }
+                ]}
+                {...editPetForm.getInputProps('gender')}
+                clearable
+              />
+
+              <Divider label="Compatibility" labelPosition="center" />
+
+              <Stack gap="xs">
+                <Text size="sm" fw={500}>Good With:</Text>
+                <Switch
+                  label="Kids"
+                  {...editPetForm.getInputProps('good_with_kids', { type: 'checkbox' })}
+                  color="green"
+                />
+                <Switch
+                  label="Dogs"
+                  {...editPetForm.getInputProps('good_with_dogs', { type: 'checkbox' })}
+                  color="blue"
+                />
+                <Switch
+                  label="Cats"
+                  {...editPetForm.getInputProps('good_with_cats', { type: 'checkbox' })}
+                  color="orange"
+                />
+              </Stack>
               
               <Group justify="flex-end">
                 <Button variant="light" onClick={() => setEditingPet(null)}>

@@ -60,7 +60,14 @@ CREATE TABLE pets (
     training_level VARCHAR(10) CHECK (training_level IN ('Green','Yellow','Blue','Red','Black')) NOT NULL,
     is_fosterable BOOLEAN NOT NULL DEFAULT FALSE,
     photo_url TEXT,
-    notes TEXT
+    notes TEXT,
+    entry_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    age_category VARCHAR(10) CHECK (age_category IN ('puppy','adult','senior')),
+    size VARCHAR(10) CHECK (size IN ('small','medium','large')),
+    gender VARCHAR(10) CHECK (gender IN ('male','female')),
+    good_with_kids BOOLEAN DEFAULT FALSE,
+    good_with_dogs BOOLEAN DEFAULT FALSE,
+    good_with_cats BOOLEAN DEFAULT FALSE
 );
 
 -- ========================
@@ -72,7 +79,8 @@ CREATE TABLE dog_walks (
     dog_id UUID REFERENCES pets(pet_id) ON DELETE CASCADE,
     walk_date DATE NOT NULL,
     time_start TIME NOT NULL,
-    duration INTERVAL NOT NULL
+    duration INTERVAL NOT NULL,
+    notes TEXT
 );
 
 -- ========================
@@ -155,24 +163,24 @@ INSERT INTO user_training (user_id, training_level) VALUES
 ('550e8400-e29b-41d4-a716-446655440007', 'Yellow'); -- James Brown
 
 -- Insert Pets (with explicit UUIDs for reference)
-INSERT INTO pets (pet_id, name, species, training_level, is_fosterable, photo_url, notes) VALUES
+INSERT INTO pets (pet_id, name, species, training_level, is_fosterable, photo_url, notes, age_category, size, gender, good_with_kids, good_with_dogs, good_with_cats) VALUES
 -- Dogs
-('660e8400-e29b-41d4-a716-446655440001', 'Bella', 'dog', 'Green', true, 'https://example.com/bella.jpg', 'Friendly golden retriever, great with kids'),
-('660e8400-e29b-41d4-a716-446655440002', 'Buddy', 'dog', 'Yellow', false, 'https://example.com/buddy.jpg', 'Energetic border collie, needs active family'),
-('660e8400-e29b-41d4-a716-446655440003', 'Daisy', 'dog', 'Blue', true, 'https://example.com/daisy.jpg', 'Sweet lab mix, loves to play fetch'),
-('660e8400-e29b-41d4-a716-446655440004', 'Luna', 'dog', 'Red', false, 'https://example.com/luna.jpg', 'Shy but gentle, needs patient owner'),
-('660e8400-e29b-41d4-a716-446655440005', 'Max', 'dog', 'Green', true, 'https://example.com/max.jpg', 'Playful puppy, learning basic commands'),
-('660e8400-e29b-41d4-a716-446655440006', 'Rocky', 'dog', 'Black', false, 'https://example.com/rocky.jpg', 'Senior dog, calm and loving'),
-('660e8400-e29b-41d4-a716-446655440007', 'Winston', 'dog', 'Yellow', true, 'https://example.com/winston.jpg', 'Smart poodle mix, house trained'),
-('660e8400-e29b-41d4-a716-446655440008', 'Charlie', 'dog', 'Blue', false, 'https://example.com/charlie.jpg', 'Active husky, needs lots of exercise'),
+('660e8400-e29b-41d4-a716-446655440001', 'Bella', 'dog', 'Green', true, 'https://example.com/bella.jpg', 'Friendly golden retriever, great with kids', 'adult', 'large', 'female', true, true, false),
+('660e8400-e29b-41d4-a716-446655440002', 'Buddy', 'dog', 'Yellow', false, 'https://example.com/buddy.jpg', 'Energetic border collie, needs active family', 'adult', 'medium', 'male', true, true, false),
+('660e8400-e29b-41d4-a716-446655440003', 'Daisy', 'dog', 'Blue', true, 'https://example.com/daisy.jpg', 'Sweet lab mix, loves to play fetch', 'adult', 'large', 'female', true, true, true),
+('660e8400-e29b-41d4-a716-446655440004', 'Luna', 'dog', 'Red', false, 'https://example.com/luna.jpg', 'Shy but gentle, needs patient owner', 'adult', 'medium', 'female', false, false, false),
+('660e8400-e29b-41d4-a716-446655440005', 'Max', 'dog', 'Green', true, 'https://example.com/max.jpg', 'Playful puppy, learning basic commands', 'puppy', 'medium', 'male', true, true, false),
+('660e8400-e29b-41d4-a716-446655440006', 'Rocky', 'dog', 'Black', false, 'https://example.com/rocky.jpg', 'Senior dog, calm and loving', 'senior', 'large', 'male', true, true, true),
+('660e8400-e29b-41d4-a716-446655440007', 'Winston', 'dog', 'Yellow', true, 'https://example.com/winston.jpg', 'Smart poodle mix, house trained', 'adult', 'small', 'male', true, true, true),
+('660e8400-e29b-41d4-a716-446655440008', 'Charlie', 'dog', 'Blue', false, 'https://example.com/charlie.jpg', 'Active husky, needs lots of exercise', 'adult', 'large', 'male', false, false, false),
 
 -- Cats
-('660e8400-e29b-41d4-a716-446655440009', 'Whiskers', 'cat', 'Green', true, 'https://example.com/whiskers.jpg', 'Gentle tabby, loves to cuddle'),
-('660e8400-e29b-41d4-a716-446655440010', 'Shadow', 'cat', 'Yellow', false, 'https://example.com/shadow.jpg', 'Shy black cat, needs quiet home'),
-('660e8400-e29b-41d4-a716-446655440011', 'Mittens', 'cat', 'Blue', true, 'https://example.com/mittens.jpg', 'Playful kitten, good with other cats'),
-('660e8400-e29b-41d4-a716-446655440012', 'Fluffy', 'cat', 'Green', false, 'https://example.com/fluffy.jpg', 'Senior cat, very affectionate'),
-('660e8400-e29b-41d4-a716-446655440013', 'Tiger', 'cat', 'Yellow', true, 'https://example.com/tiger.jpg', 'Orange tabby, loves to explore'),
-('660e8400-e29b-41d4-a716-446655440014', 'Smokey', 'cat', 'Blue', false, 'https://example.com/smokey.jpg', 'Gray cat, independent personality');
+('660e8400-e29b-41d4-a716-446655440009', 'Whiskers', 'cat', 'Green', true, 'https://example.com/whiskers.jpg', 'Gentle tabby, loves to cuddle', 'adult', 'medium', 'male', true, false, true),
+('660e8400-e29b-41d4-a716-446655440010', 'Shadow', 'cat', 'Yellow', false, 'https://example.com/shadow.jpg', 'Shy black cat, needs quiet home', 'adult', 'small', 'female', false, false, false),
+('660e8400-e29b-41d4-a716-446655440011', 'Mittens', 'cat', 'Blue', true, 'https://example.com/mittens.jpg', 'Playful kitten, good with other cats', 'puppy', 'small', 'female', true, false, true),
+('660e8400-e29b-41d4-a716-446655440012', 'Fluffy', 'cat', 'Green', false, 'https://example.com/fluffy.jpg', 'Senior cat, very affectionate', 'senior', 'medium', 'female', true, false, true),
+('660e8400-e29b-41d4-a716-446655440013', 'Tiger', 'cat', 'Yellow', true, 'https://example.com/tiger.jpg', 'Orange tabby, loves to explore', 'adult', 'medium', 'male', true, false, true),
+('660e8400-e29b-41d4-a716-446655440014', 'Smokey', 'cat', 'Blue', false, 'https://example.com/smokey.jpg', 'Gray cat, independent personality', 'adult', 'medium', 'male', false, false, false);
 
 -- Insert Tasks
 INSERT INTO tasks (title, description, priority, notes, created_by, created_at) VALUES
